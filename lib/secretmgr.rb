@@ -8,6 +8,7 @@ require 'ykutils'
 
 require_relative "secretmgr/version"
 require_relative "secretmgr/secretmgr"
+require_relative "secretmgr/config"
 
 module Secretmgr
   INSTALLED_APP = "installed".freeze

@@ -10,3 +10,8 @@
 # rspec failure tracking
 .rspec_status
 /secret/
+/plain/
+/template/
+/vendor/
+/exe/a.rb
+

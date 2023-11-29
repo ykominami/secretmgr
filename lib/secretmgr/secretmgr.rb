@@ -1,84 +1,155 @@
 # frozen_string_literal: true
 require 'pp'
+require 'pathname'
 
 module Secretmgr
   # 秘匿情報マネージャ
   class Secretmgr
-    def initialize(setting_file, secret_file)
-      @setting_file = setting_file
-      @secret_file = secret_file
+    attr_reader :decrypted_text, :secret
 
+	class << self
+      def create(secret_dir_pn, plain_setting_file_pn, plain_secret_file_pn)
+        @inst = Secretmgr.new(secret_dir_pn)
+        @inst.set_setting_for_data(plain_setting_file_pn, plain_secret_file_pn)
+        @inst
+      end
+    end
+
+    def initialize(secret_dir_pn)
+      @content = nil
+      @secret_dir_pn = secret_dir_pn
+      @encrypted_setting_file_pn = @secret_dir_pn + "setting.yml"
+      
+      @format_config = Config.new(@secret_dir_pn, "format.txt")
+      home_dir = ENV['HOME']
+      @home_pn = Pathname.new(home_dir)
       # pemフォーマットの公開鍵ファイルの内容を取得
-      path = File.join(ENV['HOME'], '.ssh', 'pem')
+      path = File.join(home_dir, '.ssh', 'pem')
       pub_key = File.read(path)
       # 鍵をOpenSSLのオブジェクトにする
       @public_key = OpenSSL::PKey::RSA.new(pub_key)
-      path = File.join(ENV['HOME'], '.ssh', 'id_rsa_no')
+      path = File.join(home_dir, '.ssh', 'id_rsa_no')
       private_key = File.read(path)
       @private_key = OpenSSL::PKey::RSA.new(private_key)
 
       @mode = OpenSSL::PKey::RSA::PKCS1_PADDING
     end
 
+    def set_setting_for_data(plain_setting_file_pn, plain_secret_file_pn)
+        @plain_setting_file_pn = plain_setting_file_pn
+        @plain_secret_file_pn = plain_secret_file_pn
+        @plain_dir_pn = @plain_setting_file_pn.parent
+    end
+
+    def setup
+        setup_setting
+        setup_secret
+        setup_secret_for_json_file
+    end
+
+    def setup_setting()
+        hash = {}
+        content = File.read(@plain_setting_file_pn)
+        @setting = Ykxutils::yaml_load_compati(content)
+        # content = YAML.dump(@setting)
+        encrypted_text = encrypt_with_public_key(content)
+        dest_setting_file_pn = make_pair_file_pn(@secret_dir_pn, @plain_setting_file_pn, "yml")
+
+		File.write(dest_setting_file_pn, encrypted_text)
+    end
+
+    def make_pair_file_pn(dest_dir_pn, file_pn, ext)
+        basename = file_pn.basename()
+        extname = basename.extname()
+        return nil if extname == ext
+        basename = file_pn.basename(".*")
+        dest_dir_pn + %(#{basename}.#{ext})
+    end
+
+    def setup_secret()
+        plaintext = File.read(@plain_secret_file_pn)
+        encrypted_text = encrypt_with_common_key(plaintext, @setting["key"], @setting["iv"])
+        dest_secret_file_pn = make_pair_file_pn(@secret_dir_pn, @plain_secret_file_pn, "yml")
+        real_pn = dest_secret_file_pn.realpath
+		# puts "setup_secret dest_secret_file_pn=#{dest_secret_file_pn}"
+		# puts "real_pn=#{real_pn}"
+        File.write(dest_secret_file_pn, encrypted_text)
+    end
+
+    def setup_secret_for_json_file
+		top_pn = @plain_dir_pn + "JSON_FILE"
+		top_pn.find{ |x|
+			# p x if x.file?
+			relative_path =  x.relative_path_from(@plain_dir_pn)
+			# p relative_path
+			encrypt_and_copy(x, @secret_dir_pn, relative_path)
+		}
+    end
+
+    def encrypt_and_copy(src_pn, dest_top_dir_pn, relative_path)
+        dest_pn = dest_top_dir_pn + relative_path
+        if src_pn.exist? && src_pn.file?
+            puts "e_adn_c #{src_pn} -> #{dest_pn}"
+	        plaintext = File.read(src_pn)
+	        encrypted_text = encrypt_with_common_key(plaintext, @setting["key"], @setting["iv"])
+	        File.write(dest_pn, encrypted_text)
+        end
+    end
+
+    def set_setting_for_query(*dirs)
+      @valid_dirs = dirs.flatten.select{ |dir| dir != nil }
+      @target, @sub_target, _tmp = @valid_dirs
+      # p "@valid_dirs=#{@valid_dirs}"
+	  @file_format = @format_config.file_format(@target, @sub_target)
+	  p "@file_format=#{@file_format}"
+	  p "dirs=#{dirs}"
+	  @encrypted_secret_file_pn = @format_config.get_file_path(@secret_dir_pn, dirs)
+    end
+
     def load_setting
-      encrypted_text = File.read(@setting_file)
+      encrypted_text = File.read(@encrypted_setting_file_pn)
       # puts "encrypted_text=#{encrypted_text}"
       decrypted_text = decrypt_with_private_key(encrypted_text)
-      @setting = YAML.load(decrypted_text)
-      @key = @setting["key"]
-      @iv = @setting["iv"]
+      setting = YAML.load(decrypted_text)
+      @key = setting["key"]
+      @iv = setting["iv"]
+	  # p "load_settings @key=#{@key}"
+	  # p "load_settings @iv=#{@iv}"
     end
 
     def load_secret
-      base64_text = File.read(@secret_file)
+      # p "load_secret @encrypted_secret_yaml_file_pn=#{@encrypted_secret_yaml_file_pn}"
+      base64_text = File.read(@encrypted_secret_file_pn)
+      # p "base64_text=#{base64_text}"
       encrypted_content = Base64.decode64(base64_text)
+      # p "encrypted_content=#{encrypted_content}"
+	  begin
+        @decrpyted_content = decrypt_with_common_key(encrypted_content, @key, @iv)
+        @content = case @file_format
+        when "JSON_FILE"
+          # @secret = JSON.parse(decrpyted_content)
+          @decrpyted_content
+        when "YAML"
+          @secret = YAML.load(@decrpyted_content)
+          @sub_target ? @secret[@target][@sub_target] : @secret[@target]
+        else
+          #
+          ""
+        end
 
-      decrpyted_content = decrypt_with_common_key(encrypted_content, @key, @iv)
-      # puts "decrpyted_content=#{decrpyted_content}"
-      @secret = YAML.load(decrpyted_content)
+      rescue => ex
+        puts ex
+        puts ex.message
+        puts ex.backtrace
+        puts "Can't dencrypt #{@encrypted_setting_file_pn}"
+      end
       # pp @secret
+      @content
     end
 
     def load
       load_setting
       load_secret
-    end
-
-    def setup_setting
-      hash = {}
-      content = File.read(@setting_file)
-      @setting = Ykxutils::yaml_load_compati(content)
-      # content = YAML.dump(@setting)
-      encrypted_text = encrypt_with_public_key(content)
-      dest_ssetting_file = make_pair_file_path(@setting_file, "yml")
-
-      File.open(dest_ssetting_file, "w"){ |file|
-        file.write(encrypted_text)
-      }
-    end
-
-    def setup_secret
-      plaintext = File.read(@secret_file)
-      encrypted_text = encrypt_with_common_key(plaintext, @setting["key"], @setting["iv"])
-      dest_secret_yaml = make_pair_file_path(@secret_file, "yml")
-
-      File.open(dest_secret_yaml, "w"){ |file|
-        file.write(encrypted_text)
-      }
-    end
-
-    def setup
-      setup_setting
-      setup_secret
-    end
-
-    def make_pair_file_path(file_path, ext)
-      basename = File.basename(file_path)
-      extname = File.extname(basename)
-      return nil if extname == ext
-      basename = File.basename(file_path, ".*")
-      dirname = File.dirname(file_path)
-      File.join(dirname, %!#{basename}.#{ext}!)
     end
 
     def encrypt_with_public_key(data)
@@ -120,13 +191,17 @@ module Secretmgr
     end
 
     def make(template_dir, target, sub_target)
-      puts("template_dir=#{template_dir}")
-      puts("target=#{target}")
-      puts("sub_target=#{sub_target}")
-      # puts("@secret=#{@secret}")
-      # pp @secret[target][sub_target]
-      pp @secret[target]
-      pp @secret[target][sub_target]
+      content = case @file_format
+      when "JSON_FILE"
+        @content
+      when "YAML"
+        @content.map{ |item|
+          %(export #{item[0]}=#{item[1]})
+        }.flatten
+      else
+        ""
+      end
+      content
     end
   end
 end
