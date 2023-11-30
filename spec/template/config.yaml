@@ -1,0 +1,29 @@
+Evernote:
+  sh:
+    template_file: evernote_sh.erb
+    output_file: enop.sh
+  bat:
+    template_file: evernote_bat.erb
+    output_file: run_enop.bat
+Google:
+  yk-sheet-upload:
+    sh:
+      template_file: google_sh.erb
+      output_file: google_yk_sheet_upload.sh
+    bat:
+      template_file: google_bat.erb
+      output_file: run_google_yk_sheet_upload.bat
+  gcp-scrapingbook2:
+    sh:
+      template_file: google_sh.erb
+      output_file: google_gcp_scrapingbook2.sh
+    bat:
+      template_file: google_bat.erb
+      output_file: run_google_gcp_scrapingbook2.bat
+  youtubex:
+    sh:
+      template_file: google_sh.erb
+      output_file: google_youtubux.sh
+    bat:
+      template_file: google_bat.erb
+      output_file: run_google_youtubux.bat

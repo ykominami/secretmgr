@@ -10,5 +10,5 @@ gem "rspec", "~> 3.0"
 gem "rubocop", "~> 1.21"
 
 gem "multi_json"
-gem "ykxutils"
 gem "ykutils"
+gem "ykxutils"

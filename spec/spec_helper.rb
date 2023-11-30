@@ -14,36 +14,28 @@ RSpec.configure do |config|
   end
 end
 
-def encrypt_decrypt(plaintext, key, iv)
-  # p "encrypt"
-  # p "plaintext=#{plaintext}"
-  # puts plaintext
+def encrypt_decrypt(plaintext, key, ivalue)
   encx = OpenSSL::Cipher.new(CIPHER_NAME)
   encx.encrypt
   encx.key = key
-  encx.iv = iv
+  encx.iv = ivalue
   # str に与えた文字列を暗号化します。
   encrypted_text = encx.update(plaintext) + encx.final
-  plaintext = encrypted_text
   base64_text = Base64.encode64(encrypted_text)
-  File.open( "a.txt" , "w"){ |file|
+  File.open("a.txt", "w") do |file|
     file.write(base64_text)
-  }
+  end
   base64_text_2 = File.read("a.txt")
   plaintext = Base64.decode64(base64_text_2)
 
   decx = OpenSSL::Cipher.new(CIPHER_NAME)
   decx.decrypt
   decx.key = key
-  decx.iv = iv
+  decx.iv = ivalue
   data = decx.update(plaintext)
   final_data = decx.final
   decrypted_data = data + final_data
-  # decrypted_data = decx.update(encrypted_data) + decx.final
   decrypted_data.force_encoding("UTF-8")
-  puts "encrypt_decrypt"
 
-  decrpyted_content = decrypt(plaintext, key, iv)
+  decrypt(plaintext, key, ivalue)
 end
-
-
