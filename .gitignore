@@ -15,3 +15,6 @@
 /vendor/
 /exe/a.rb
 
+config.json
+secretmgr.code-workspace
+

@@ -23,7 +23,7 @@ module Secretmgr
 
     def get_file_path(parent_dir_pn, *keys)
       flat_keys = keys.flatten
-      valid_keys = flat_keys.reject(&:nil?)
+      valid_keys = flat_keys.compact
       file_format = file_format(valid_keys)
       case file_format
       when "JSON_FILE"
