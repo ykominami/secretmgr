@@ -4,7 +4,6 @@ require "openssl"
 require "base64"
 require "multi_json"
 require "ykxutils"
-require "ykutils"
 
 require_relative "secretmgr/version"
 require_relative "secretmgr/secretmgr"
