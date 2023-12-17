@@ -1,39 +1,81 @@
 # frozen_string_literal: true
 
 RSpec.describe Secretmgr do
-  before do
-    @secret_file = "config.json"
-    @spec_dir_pn = Pathname.new(__FILE__).parent
-    @secret_file_pn = Pathname.new(@secret_file)
+  TestData = Struct.new(:ssh_dir, :secret_dir, :plain_dir, :public_keyfile, :private_keyfile, :encrypted_setting_file,
+                        :encrypted_secret_file, :plain_secret_file, :plain_setting_file)
+  CLI = Secretmgr::Cli.new
 
-    @test_data_dir_pn = @spec_dir_pn + "test_data"
-    @secret_dir_pn = @test_data_dir_pn + "secret"
-    @plain_dir_pn = @test_data_dir_pn + "plain"
-    @plain_setting_file_pn = @plain_dir_pn + "setting.txt"
-    @plain_secret_file_pn = @plain_dir_pn + "secret.txt"
+  def test_data_setup(home_dir_pn, public_key_filename = "id_rsa_no.pub.pem", private_key_filename = "id_rsa_no.pub")
+    # Create an instance of the Struct class
+    ssh_dir_pn = home_dir_pn + ".ssh"
+    secret_dir_pn = home_dir_pn + "secret"
+    plain_dir_pn = home_dir_pn + "plain"
+    TestData.new(
+      ssh_dir_pn,
+      home_dir_pn + "secret",
+      home_dir_pn + "plain",
+      ssh_dir_pn + public_key_filename,
+      ssh_dir_pn + private_key_filename,
+      secret_dir_pn + "setting.yml",
+      secret_dir_pn + "secret.yml",
+      plain_dir_pn + "secret.txt",
+      plain_dir_pn + "setting.txt"
+    )
   end
+
+  spec_dir_pn = Pathname.new(__FILE__).parent
+  let(:home_dir_pn) { Pathname.new(Dir.home) }
+  let(:test_data_dir_pn) { spec_dir_pn + "test_data" }
 
   it "has a version number" do
-    expect(Secretmgr::VERSION).not_to be nil
+    expect(Secretmgr::VERSION).not_to be_nil
   end
 
-  it "encrypt plaintext" do
-    # puts("@secret_dir_pn=#{@secret_dir_pn}")
-    # puts("@plain_setting_file_pn=#{@plain_setting_file_pn}")
-    # puts("@plain_secret_file_pn=#{@plain_secret_file_pn}")
-    sm = Secretmgr::Secretmgr.new(@secret_dir_pn, @plain_setting_file_pn, @plain_secret_file_pn)
-    sm.setup
+  it "encrypt plain text" do
+    tdata = test_data_setup(test_data_dir_pn, "id_rsa_no_y.pub.pem.1", "id_rsa_no_y")
+    cli = Secretmgr::Cli.new
+    inst = Secretmgr::Secretmgr.new(cli.loggerx, tdata.secret_dir, tdata.public_keyfile, tdata.private_keyfile)
+    inst.set_setting_for_plain(tdata.plain_setting_file, tdata.plain_secret_file)
+    inst.setup
+    expect(tdata.encrypted_setting_file.exist?).to be_truthy
+    expect(tdata.encrypted_secret_file.exist?).to be_truthy
   end
 
   it "decrypt encrypted text" do
+    tdata = test_data_setup(test_data_dir_pn, "id_rsa_no_y.pub.pem.1", "id_rsa_no_y")
     target = "TEST"
-    sub_target = "subtest"
+    subtarget = "subtest"
+    cli = Secretmgr::Cli.new
+    inst = Secretmgr::Secretmgr.new(cli.loggerx, tdata.secret_dir, tdata.public_keyfile, tdata.private_keyfile)
+    inst.set_setting_for_encrypted(tdata.encrypted_setting_file, tdata.encrypted_secret_file)
+    inst.set_setting_for_query(target, subtarget)
+    inst.load
+    ret = inst.make(target, subtarget)
+    expect(ret.size).not_to eq(0)
+  end
 
-    sm = Secretmgr::Secretmgr.create(@secret_dir_pn, @plain_setting_file_pn, @plain_secret_file_pn)
-    sm.set_setting_for_query(target, sub_target)
-    content = sm.load
-    File.write(@secret_file_pn, content)
+  it "encrypt plain text with home directory" do
+    tdata = test_data_setup(home_dir_pn, "id_rsa_no.pub.pem.1", "id_rsa_no")
+    cli = Secretmgr::Cli.new
+    inst = Secretmgr::Secretmgr.new(cli.loggerx, tdata.secret_dir, tdata.public_keyfile, tdata.private_keyfile)
+    inst.set_setting_for_plain(tdata.plain_setting_file, tdata.plain_secret_file)
+    inst.setup
+    expect(Pathname.new(tdata.encrypted_setting_file).exist?).to be_truthy
+    expect(Pathname.new(tdata.encrypted_secret_file).exist?).to be_truthy
+  end
 
-    expect(@secret_file_pn.exist?).to eq(true)
+  # Define a Struct class
+  it "decrypt encrypted text with home directory" do
+    tdata = test_data_setup(home_dir_pn, "id_rsa_no.pub.pem.1", "id_rsa_no")
+
+    target = "TEST"
+    subtarget = "subtest"
+    cli = Secretmgr::Cli.new
+    inst = Secretmgr::Secretmgr.new(cli.loggerx, tdata.secret_dir, tdata.public_keyfile, tdata.private_keyfile)
+    inst.set_setting_for_encrypted(tdata.encrypted_setting_file, tdata.encrypted_secret_file)
+    inst.set_setting_for_query(target, subtarget)
+    inst.load
+    ret = inst.make(target, subtarget)
+    expect(ret.size).not_to eq(0)
   end
 end
