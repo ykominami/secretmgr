@@ -10,3 +10,9 @@ gem "rspec", "~> 3.0"
 gem "rubocop", "~> 1.21"
 
 gem "multi_json"
+
+gem "debug"
+gem "rubocop-rake", require: false
+gem "rubocop-rspec", require: false
+
+gem "loggerx", path: "../loggerx"

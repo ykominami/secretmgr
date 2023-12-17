@@ -1,5 +1,8 @@
 inherit_from: .rubocop_todo.yml
 
+require: rubocop-rake
+require: rubocop-rspec
+
 AllCops:
   NewCops: enable
   TargetRubyVersion: 2.6
@@ -15,7 +18,7 @@ Style/StringLiteralsInInterpolation:
 Layout/LineLength:
   Max: 120
 
-Documentation:
+Style/Documentation:
   Enabled: false
 
 #追加
