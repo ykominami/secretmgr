@@ -18,3 +18,7 @@
 config.json
 secretmgr.code-workspace
 
+#
+setting.yml
+secret.yml
+
