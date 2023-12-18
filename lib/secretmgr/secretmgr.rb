@@ -8,6 +8,7 @@ module Secretmgr
   class Secretmgr
     attr_reader :decrypted_text, :secret
 
+    @init_count = 0
     # @setting_file = "setting.yml"
     JSON_FILE_DIR = "JSON_FILE"
     SETTING_KEY = "key"
@@ -19,8 +20,18 @@ module Secretmgr
     # @secret_dir = "secret"
 
     class << self
-      def create(loggerx, secret_dir_pn, public_keyfile_pn, private_keyfile_pn)
-        @inst = Secretmgr.new(loggerx, secret_dir_pn, public_keyfile_pn, private_keyfile_pn)
+      def log_init(log_level = :info)
+        # log_level = :info
+        Loggerxs.init("log_", "log.txt", ".", true, log_level) if @init_count.zero?
+        @init_count += 1
+      end
+
+      def reset_init_count
+        @init_count = 0
+      end
+
+      def create(secret_dir_pn, public_keyfile_pn, private_keyfile_pn)
+        @inst = Secretmgr.new(secret_dir_pn, public_keyfile_pn, private_keyfile_pn)
         @inst.set_setting_for_data(plain_setting_file_pn, plain_secret_file_pn)
         @inst
       end
@@ -29,35 +40,17 @@ module Secretmgr
       #            :setting_key, :setting_iv, :format_json, :format_yaml, :secret_dir
     end
 
-    def is_nil_or_dontexist?(pathn)
-      pathn.nil? || !pathn.exist?
-    end
+    def initialize(secret_dir_pn, public_keyfile_pn = nil, private_keyfile_pn = nil)
+      # log_level = :debug
+      log_level = :info
+      Secretmgr.log_init(log_level)
 
-    def valid_private_keyfile(path, default_path = ".ssh/id_rsa")
-      valid_pathname(path, default_path)
-    end
-
-    def valid_public_keyfile(path, default_path = ".ssh/id_rsa.pub")
-      valid_pathname(path, default_path)
-    end
-
-    def valid_pathname(path, default_path)
-      pathn = path
-      if is_nil_or_dontexist?(path)
-        pathn = Pathname.new(Dir.home) + default_path
-        pathn = nil if is_nil_or_dontexist?(pathn)
-      end
-      pathn
-    end
-
-    def initialize(loggerx, secret_dir_pn, public_keyfile_pn = nil, private_keyfile_pn = nil)
-      @loggerx = loggerx
       home_pn = Pathname.new(Dir.home)
       valid_public_keyfile_pn = valid_public_keyfile(public_keyfile_pn)
       valid_private_keyfile_pn = valid_private_keyfile(private_keyfile_pn)
       return unless valid_public_keyfile_pn && valid_private_keyfile_pn
 
-      @secret = Secret.new(@loggerx, home_pn, secret_dir_pn, public_keyfile_pn, private_keyfile_pn)
+      @secret = Secret.new(home_pn, secret_dir_pn, public_keyfile_pn, private_keyfile_pn)
     end
 
     def valid?
@@ -87,14 +80,14 @@ module Secretmgr
       content = File.read(@plain_setting_file_pn)
 
       @setting = YAML.safe_load(content)
-      @loggerx.debug @setting
+      Loggerxs.debug @setting
       # pp "@setting=#{@setting}"
       # puts "setup_setting    @setting=#{@setting}"
       encrypted_text = @secret.encrypt_with_public_key(content)
       dest_setting_file_pn = @secret.make_pair_file_pn(@plain_setting_file_pn, YML)
 
-      @loggerx.debug "setup_setting dest_setting_file_pn=#{dest_setting_file_pn}"
-      @loggerx.debug "setup_setting dest_setting_file_pn=#{dest_setting_file_pn}"
+      Loggerxs.debug "setup_setting dest_setting_file_pn=#{dest_setting_file_pn}"
+      Loggerxs.debug "setup_setting dest_setting_file_pn=#{dest_setting_file_pn}"
       File.write(dest_setting_file_pn, encrypted_text)
     end
 
@@ -105,7 +98,7 @@ module Secretmgr
                                                        @setting[SETTING_KEY],
                                                        @setting[SETTING_IV])
       dest_secret_file_pn = @secret.make_pair_file_pn(@plain_secret_file_pn, YML)
-      @loggerx.debug "setup_secret dest_secret_file_pn=#{dest_secret_file_pn}"
+      Loggerxs.debug "setup_secret dest_secret_file_pn=#{dest_secret_file_pn}"
       File.write(dest_secret_file_pn, encrypted_text)
     end
 
@@ -125,27 +118,27 @@ module Secretmgr
       @target, @sub_target, _tmp = @valid_dirs
       # p "@valid_dirs=#{@valid_dirs}"
       @file_format = @secret.file_format(@target, @sub_target)
-      @loggerx.debug "@secret_dir_pn=#{@secret_dir_pn}"
-      @loggerx.debug "dirs=#{dirs}"
-      @loggerx.debug "@encrypted_secret_file_pn=#{@encrypted_secret_file_pn}"
+      Loggerxs.debug "@secret_dir_pn=#{@secret_dir_pn}"
+      Loggerxs.debug "dirs=#{dirs}"
+      Loggerxs.debug "@encrypted_secret_file_pn=#{@encrypted_secret_file_pn}"
 
       @encrypted_secret_file_pn = @secret.get_file_path(dirs)
     end
 
     def load_setting
-      @loggerx.debug "load_setting @encrypted_setting_file_pn=#{@encrypted_setting_file_pn}"
+      Loggerxs.debug "load_setting @encrypted_setting_file_pn=#{@encrypted_setting_file_pn}"
       encrypted_text = File.read(@encrypted_setting_file_pn)
-      @loggerx.debug "load_setting encrypted_text=#{encrypted_text}"
+      Loggerxs.debug "load_setting encrypted_text=#{encrypted_text}"
       decrypted_text = @secret.decrypt_with_private_key(encrypted_text)
       setting = YAML.safe_load(decrypted_text)
       @key = setting[SETTING_KEY]
-      @loggerx.debug "load_setting @key=#{@key}"
+      Loggerxs.debug "load_setting @key=#{@key}"
       @iv = setting[SETTING_IV]
-      @loggerx.debug "load_setting @iv=#{@iv}"
+      Loggerxs.debug "load_setting @iv=#{@iv}"
     end
 
     def load_and_decrypt
-      @loggerx.debug("@encrypted_secret_file_pn=#{@encrypted_secret_file_pn}")
+      Loggerxs.debug("@encrypted_secret_file_pn=#{@encrypted_secret_file_pn}")
       base64_text = File.read(@encrypted_secret_file_pn)
       encrypted_content = Base64.decode64(base64_text)
       begin
@@ -160,10 +153,10 @@ module Secretmgr
                      ""
                    end
       rescue StandardError => e
-        @loggerx.error e
-        @loggerx.error e.message
-        @loggerx.error e.backtrace
-        @loggerx.error "Can't dencrypt #{@encrypted_setting_file_pn}"
+        Loggerxs.error e
+        Loggerxs.error e.message
+        Loggerxs.error e.backtrace
+        Loggerxs.error "Can't dencrypt #{@encrypted_setting_file_pn}"
       end
       @content
     end
@@ -184,6 +177,21 @@ module Secretmgr
       else
         ""
       end
+    end
+
+    def valid_private_keyfile(path, default_path = ".ssh/id_rsa")
+      valid_pathname(path, default_path)
+    end
+
+    def valid_public_keyfile(path, default_path = ".ssh/id_rsa.pub")
+      valid_pathname(path, default_path)
+    end
+
+    def valid_pathname(path, default_path)
+      pathn = path
+      pathn = Pathname.new(Dir.home) + default_path if Util.nil_or_dontexist?(path)
+      pathn = nil if Util.nil_or_dontexist?(pathn)
+      pathn
     end
   end
 end

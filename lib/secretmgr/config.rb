@@ -5,8 +5,7 @@ require "yaml"
 
 module Secretmgr
   class Config
-    def initialize(loggerx, parent_pn, format_filename = "format.txt")
-      @loggerx = loggerx
+    def initialize(parent_pn, format_filename = "format.txt")
       format_pn = parent_pn + format_filename
       file_content = File.read(format_pn)
       @hash = YAML.safe_load(file_content)
@@ -19,7 +18,7 @@ module Secretmgr
                     (hash.instance_of?(Hash) ? hash[item] : nil)
                   end
       end
-      @loggerx.debug "hash=#{hash}"
+      Loggerxs.debug "hash=#{hash}"
       result ? (result[0] || @hash["default"]) : @hash["default"]
     end
 

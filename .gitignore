@@ -21,4 +21,8 @@ secretmgr.code-workspace
 #
 setting.yml
 secret.yml
+#
+dy*
+sy*
+log*.txt
 

@@ -15,12 +15,12 @@ module Secretmgr
     FILE_OPTION = 10
     DIRECTORY_OPTION = 20
 
-    attr_reader :loggerx
-
     def initialize
-      log_level = :debug
+      # log_level = :debug
+      log_level = :info
+      Secretmgr.log_init(log_level)
       # log_level = :info
-      @loggerx = Loggerx::Loggerx.new("log_", "log.txt", ".", true, log_level)
+      Loggerxs.init("log_", "log.txt", ".", true, log_level)
       @params = {}
 
       @opt = OptionParser.new
@@ -44,7 +44,7 @@ module Secretmgr
     def arg_parse(argv)
       ret = true
       @opt.parse!(argv)
-      @loggerx.debug @params
+      Loggerxs.debug @params
       @cmd = @params[:cmd]
 
       @secret_dir_pn = Pathname.new(@params[:secret_dir]) if @params[:secret_dir]
@@ -62,7 +62,7 @@ module Secretmgr
       fail_count = 0
       fail_count += directory_option_error?(@secret_dir_pn, "-s")
       fail_count += file_option_error?(@public_keyfile_pn, "-u")
-      @loggerx.debug "@private_keyfile_pn=#{@private_keyfile_pn}"
+      Loggerxs.debug "@private_keyfile_pn=#{@private_keyfile_pn}"
       fail_count += file_option_error?(@private_keyfile_pn, "-r")
 
       if @cmd == "setup"
@@ -80,9 +80,9 @@ module Secretmgr
         fail_count += file_option_error?(@encrypted_secret_file_pn, "-e")
       end
 
-      ret = false if fail_count > 0
-      @loggerx.debug "fail_count=#{fail_count}"
-      @loggerx.debug "ret=#{ret}"
+      ret = false if fail_count.positive?
+      Loggerxs.debug "fail_count=#{fail_count}"
+      Loggerxs.debug "ret=#{ret}"
       ret
     end
 
@@ -106,63 +106,44 @@ module Secretmgr
 
     def path_option_error?(pathn, option_name, kind = FILE_OPTION)
       fail_count = 0
-      if is_nil_or_dontexist?(pathn) == CLI_OPTION_SUCCESS
+      if Util.nil_or_dontexist?(pathn)
         if kind == FILE_OPTION
-          fail_count = 1 unless pathn.file?
-        elsif !pathn.directory?
-          fail_count = 1
+          Loggerxs.error "Can't find file(#{pathn}) which specified by #{option_name}"
+        else
+          Loggerxs.error "Can't find directory(#{pathn}) which specified by #{option_name}"
         end
-      else
-        @loggerx.error "Can't find file(#{pathn}) which specified by #{option_name}"
+        fail_count = 1
+      elsif kind == FILE_OPTION
+        fail_count = 1 unless pathn.file?
+      elsif !pathn.directory?
         fail_count = 1
       end
       fail_count
-    end
-
-    def is_nil_or_dontexist?(pathn)
-      ret = CLI_OPTION_SUCCESS
-      if pathn.nil?
-        ret = CLI_OPTION_ERROR_NIL
-      elsif !pathn.exist?
-        ret = CLI_OPTION_ERROR_DOES_NOT_EXIST
-      end
-      ret
     end
 
     def string_option_error?(str, option_name)
       fail_count = 0
-      if is_nil_or_zero?(str) != CLI_OPTION_SUCCESS
-        @loggerx.error "nil or size zero(#{str}) which specified by #{option_name}"
+      if Util.nil_or_zero?(str)
+        Loggerxs.error "nil or size zero(#{str}) which specified by #{option_name}"
         fail_count = 1
       end
       fail_count
     end
 
-    def is_nil_or_zero?(str)
-      ret = CLI_OPTION_SUCCESS
-      if str.nil?
-        ret = CLI_OPTION_ERROR_NIL
-      elsif str.size.zero?
-        ret = CLI_OPTION_ERROR_ZERO
-      end
-      ret
-    end
-
     def execute
-      debugger
       ret = nil
-      inst = Secretmgr.new(@loggerx, @secret_dir_pn, @public_keyfile_pn, @private_keyfile_pn)
+      inst = Secretmgr.new(@secret_dir_pn, @public_keyfile_pn, @private_keyfile_pn)
       return EXIT_CODE_FAILURE unless inst.valid?
 
       inst.set_setting_for_encrypted(@encrypted_setting_file_pn, @encrypted_secret_file_pn)
 
       case @cmd
       when "setup"
-        @loggerx.debug "setup 1"
+        Loggerxs.debug "setup 1"
         inst.set_setting_for_plain(@plain_setting_file_pn, @plain_secret_file_pn)
-        @loggerx.debug "setup 2"
+        Loggerxs.debug "setup 2"
         ret = inst.setup
-        @loggerx.debug "setup ret=#{ret}"
+        Loggerxs.debug "setup ret=#{ret}"
       else
         inst.set_setting_for_query(@target, @subtarget)
         inst.load

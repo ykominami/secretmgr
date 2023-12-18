@@ -11,15 +11,14 @@ module Secretmgr
     SETTING_FILE = "setting.yml".freeze
     SECRET_FILE = "secret.yml".freeze
 
-    def initialize(loggerx, home_pn, secret_dir_pn, public_keyfile_pn, private_keyfile_pn)
-      @loggerx = loggerx
+    def initialize(home_pn, secret_dir_pn, public_keyfile_pn, private_keyfile_pn)
       @content = nil
       @home_pn = home_pn
       @secret_dir_pn = secret_dir_pn
 
-      @format_config = Config.new(@loggerx, @secret_dir_pn, FORMAT_FILE)
-      @loggerx.debug "Secret public_keyfile_pn=#{public_keyfile_pn}"
-      @loggerx.debug "Secret private_keyfile_pn=#{private_keyfile_pn}"
+      @format_config = Config.new(@secret_dir_pn, FORMAT_FILE)
+      Loggerxs.debug "Secret public_keyfile_pn=#{public_keyfile_pn}"
+      Loggerxs.debug "Secret private_keyfile_pn=#{private_keyfile_pn}"
 
       @public_key = create_public_key(public_keyfile_pn)
       @private_key = create_private_key(private_keyfile_pn)
@@ -30,16 +29,16 @@ module Secretmgr
       key_obj = nil
       pub_key = nil
       pub_key = File.read(public_keyfile_pn) if public_keyfile_pn.exist?
-      @loggerx.debug "0 public_keyfile_pn=#{public_keyfile_pn}"
+      Loggerxs.debug "0 public_keyfile_pn=#{public_keyfile_pn}"
       if pub_key.nil? || pub_key.empty?
         pub_pn = @home_pn + SSH_DIR + RSA_PUBLIC_PEM_FILE
         pub_key = File.read(pub_pn)
-        @loggerx.debug "2 pub_key="
+        Loggerxs.debug "2 pub_key="
       end
       unless pub_key.nil?
         # 鍵をOpenSSLのオブジェクトにする
         key_obj = OpenSSL::PKey::RSA.new(pub_key)
-        @loggerx.debug "3 key_obj="
+        Loggerxs.debug "3 key_obj="
       end
       key_obj
     end
@@ -47,18 +46,18 @@ module Secretmgr
     def create_private_key(private_keyfile_pn)
       key_obj = nil
       private_key = nil
-      @loggerx.debug "20 private_keyfile_pn=#{private_keyfile_pn}"
+      Loggerxs.debug "20 private_keyfile_pn=#{private_keyfile_pn}"
       private_key = File.read(private_keyfile_pn) if private_keyfile_pn.exist?
-      @loggerx.debug "21 private_key="
+      Loggerxs.debug "21 private_key="
       if private_key.nil? || private_key.empty?
         private_pn = @home_pn + SSH_DIR + RSA_PRIVATE_FILE
         private_key = File.read(private_pn)
-        @loggerx.debug "22 private_key="
+        Loggerxs.debug "22 private_key="
       end
       unless private_key.nil?
         private_key = File.read(private_keyfile_pn)
         key_obj = OpenSSL::PKey::RSA.new(private_key)
-        @loggerx.debug "23 private_key="
+        Loggerxs.debug "23 private_key="
       end
       key_obj
     end
@@ -97,12 +96,12 @@ module Secretmgr
       ).delete("\n")
     end
 
-    def encrypt_and_copy(src_pn, relative_path, key, iv)
+    def encrypt_and_copy(src_pn, relative_path, key, ivx)
       dest_pn = @secret_dir_pn + relative_path
       return unless src_pn.exist? && src_pn.file?
 
       plaintext = File.read(src_pn)
-      encrypted_text = encrypt_with_common_key(plaintext, key, iv)
+      encrypted_text = encrypt_with_common_key(plaintext, key, ivx)
       File.write(dest_pn, encrypted_text)
     end
 

@@ -6,10 +6,13 @@ require "multi_json"
 
 require "loggerx"
 require_relative "secretmgr/version"
+require_relative "secretmgr/util"
 require_relative "secretmgr/cli"
 require_relative "secretmgr/secretmgr"
 require_relative "secretmgr/config"
 require_relative "secretmgr/secret"
+require_relative "secretmgr/loggerxs"
+# require_relative "secretmgr/loggerxs"
 
 module Secretmgr
   INSTALLED_APP = "installed"
