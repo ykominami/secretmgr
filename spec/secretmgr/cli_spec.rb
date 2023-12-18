@@ -1,4 +1,9 @@
 RSpec.describe Secretmgr::Cli do
+  Secretmgr::Secretmgr.reset_init_count()
+  log_level = :info
+  #log_level = :debug
+  Secretmgr::Secretmgr.log_init(log_level)
+
   let(:test_data) do
     Struct.new(:ssh_dir, :secret_dir, :plain_dir, :public_keyfile, :private_keyfile, :encrypted_setting_file,
                :encrypted_secret_file, :plain_secret_file, :plain_setting_file)

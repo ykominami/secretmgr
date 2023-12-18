@@ -1,6 +1,11 @@
 # frozen_string_literal: true
 
 RSpec.describe Secretmgr do
+  Secretmgr::Secretmgr.reset_init_count()
+  log_level = :info
+  #log_level = :debug
+  Secretmgr::Secretmgr.log_init(log_level)
+ 
   let(:test_data) do
     Struct.new(:ssh_dir, :secret_dir, :plain_dir, :public_keyfile, :private_keyfile, :encrypted_setting_file,
                :encrypted_secret_file, :plain_secret_file, :plain_setting_file)
@@ -32,6 +37,10 @@ RSpec.describe Secretmgr do
 
   it "encrypt plain text" do
     # Secretmgr::Secretmgr.reset_init_count()
+    log_level = :info
+    #log_level = :debug
+    Secretmgr::Secretmgr.log_init(log_level)
+    #
     tdata = test_data_setup(test_data_dir_pn, "id_rsa_no_y.pub.pem.1", "id_rsa_no_y")
     tdata.encrypted_setting_file.delete
     tdata.encrypted_secret_file.delete

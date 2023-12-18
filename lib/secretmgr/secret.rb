@@ -100,6 +100,9 @@ module Secretmgr
       dest_pn = @secret_dir_pn + relative_path
       return unless src_pn.exist? && src_pn.file?
 
+      dest_parent_pn = dest_pn.parent
+      dest_parent_pn.mkpath
+
       plaintext = File.read(src_pn)
       encrypted_text = encrypt_with_common_key(plaintext, key, ivx)
       File.write(dest_pn, encrypted_text)

@@ -22,6 +22,7 @@ module Secretmgr
     class << self
       def log_init(log_level = :info)
         # log_level = :info
+        log_level = :debug
         Loggerxs.init("log_", "log.txt", ".", true, log_level) if @init_count.zero?
         @init_count += 1
       end
@@ -102,14 +103,24 @@ module Secretmgr
       File.write(dest_secret_file_pn, encrypted_text)
     end
 
+    def remove_last_extension(pathn)
+      parent = pathn.parent
+      basename = pathn.basename
+      ext = basename.extname
+      base = basename.basename(ext)
+      parent + base           
+    end
+
     def setup_secret_for_json_file
       top_pn = @plain_dir_pn + JSON_FILE_DIR
       top_pn.find do |x|
         next if x.directory?
 
-        # p x
         relative_path = x.relative_path_from(@plain_dir_pn)
-        @secret.encrypt_and_copy(x, relative_path, @setting[SETTING_KEY], @setting[SETTING_IV])
+        new_relative_path = remove_last_extension(relative_path)
+        Loggerxs.debug("################ relative_path=#{relative_path}")
+        Loggerxs.debug("################ new_relative_path=#{new_relative_path}")
+        @secret.encrypt_and_copy(x, new_relative_path, @setting[SETTING_KEY], @setting[SETTING_IV])
       end
     end
 
