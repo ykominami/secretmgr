@@ -21,8 +21,6 @@ module Secretmgr
 
     class << self
       def log_init(log_level = :info)
-        # log_level = :info
-        log_level = :debug
         Loggerxs.init("log_", "log.txt", ".", true, log_level) if @init_count.zero?
         @init_count += 1
       end
@@ -68,7 +66,6 @@ module Secretmgr
     def set_setting_for_encrypted(encrypted_setting_file_pn, encrypted_secret_file_pn)
       @encrypted_setting_file_pn = encrypted_setting_file_pn
       @encrypted_secret_file_pn = encrypted_secret_file_pn
-      @encrypted_secret_file_pn
     end
 
     def setup

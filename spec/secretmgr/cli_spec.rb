@@ -54,7 +54,6 @@ RSpec.describe Secretmgr::Cli do
   describe "#execute" do
     context "when cmd is 'setup'" do
       it "calls set_setting_for_plain, setup methods" do
-        Secretmgr::Secretmgr.reset_init_count
         tdata = test_data_setup(test_data_dir_pn, public_key_filename: "id_rsa_no_y.pub.pem.1",
                                                   private_key_filename: "id_rsa_no_y")
         args = %W[-c setup
