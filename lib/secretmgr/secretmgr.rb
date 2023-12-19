@@ -18,6 +18,8 @@ module Secretmgr
     YML = "yml"
     # @dot_yml = "yml"
     # @secret_dir = "secret"
+    DEFAULT_PRIVATE_KEYFILE = ".ss/id_rsa"
+    DEFAULT_PUBLIC_KEYFILE = ".ss/id_rsa.pub"
 
     class << self
       def log_init(log_level = :info)
@@ -39,7 +41,11 @@ module Secretmgr
       #            :setting_key, :setting_iv, :format_json, :format_yaml, :secret_dir
     end
 
-    def initialize(secret_dir_pn, public_keyfile_pn = nil, private_keyfile_pn = nil)
+    def initialize(secret_dir_pn,
+                   public_keyfile_pn: nil,
+                   private_keyfile_pn: nil,
+                   default_public_keyfile_pn: nil,
+                   default_private_keyfile_pn: nil)
       # log_level = :debug
       log_level = :info
       Secretmgr.log_init(log_level)
@@ -47,13 +53,17 @@ module Secretmgr
       home_pn = Pathname.new(Dir.home)
       valid_public_keyfile_pn = valid_public_keyfile(public_keyfile_pn)
       valid_private_keyfile_pn = valid_private_keyfile(private_keyfile_pn)
-      return unless valid_public_keyfile_pn && valid_private_keyfile_pn
-
-      @secret = Secret.new(home_pn, secret_dir_pn, public_keyfile_pn, private_keyfile_pn)
+      if valid_public_keyfile_pn && valid_private_keyfile_pn
+        @secret = Secret.new(home_pn, secret_dir_pn, public_keyfile_pn: valid_public_keyfile_pn,
+                                                     private_keyfile_pn: valid_private_keyfile_pn)
+      else
+        @secret = Secret.new(home_pn, secret_dir_pn, default_public_keyfile_pn: default_public_keyfile_pn,
+                                                     deault_public_keyfile_pn: default_private_keyfile_pn)
+      end
     end
 
     def valid?
-      !@secret.nil?
+      !@secret.valid
     end
 
     def set_setting_for_plain(plain_setting_file_pn, plain_secret_file_pn)
@@ -105,7 +115,7 @@ module Secretmgr
       basename = pathn.basename
       ext = basename.extname
       base = basename.basename(ext)
-      parent + base           
+      parent + base
     end
 
     def setup_secret_for_json_file
@@ -152,14 +162,14 @@ module Secretmgr
       begin
         @decrpyted_content = @secret.decrypt_with_common_key(encrypted_content, @key, @iv)
         @content = case @file_format
-                   when FORMAT_JSON
-                     @decrpyted_content
-                   when FORMAT_YAML
-                     @secret_content = YAML.safe_load(@decrpyted_content)
-                     @sub_target ? @secret_content[@target][@sub_target] : @secret_content[@target]
-                   else
-                     ""
-                   end
+          when FORMAT_JSON
+            @decrpyted_content
+          when FORMAT_YAML
+            @secret_content = YAML.safe_load(@decrpyted_content)
+            @sub_target ? @secret_content[@target][@sub_target] : @secret_content[@target]
+          else
+            ""
+          end
       rescue StandardError => e
         Loggerxs.error e
         Loggerxs.error e.message
@@ -187,11 +197,11 @@ module Secretmgr
       end
     end
 
-    def valid_private_keyfile(path, default_path = ".ssh/id_rsa")
+    def valid_private_keyfile(path, default_path = DEFAULT_PRIVATE_KEYFILE)
       valid_pathname(path, default_path)
     end
 
-    def valid_public_keyfile(path, default_path = ".ssh/id_rsa.pub")
+    def valid_public_keyfile(path, default_path = DEFAULT_PUBLIC_KEYFILE)
       valid_pathname(path, default_path)
     end
 

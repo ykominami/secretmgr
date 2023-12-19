@@ -1,11 +1,11 @@
 RSpec.describe Secretmgr::Cli do
   Secretmgr::Secretmgr.reset_init_count()
-  log_level = :info
-  #log_level = :debug
+  #log_level = :info
+  log_level = :debug
   Secretmgr::Secretmgr.log_init(log_level)
 
   let(:test_data) do
-    Struct.new(:ssh_dir, :secret_dir, :plain_dir, :public_keyfile, :private_keyfile, :encrypted_setting_file,
+    Struct.new(:ssh_dir, :secret_dir, :plain_dir, :public_keyfile, :private_keyfile, :default_public_keyfile, :default_private_keyfile, :encrypted_setting_file,
                :encrypted_secret_file, :plain_secret_file, :plain_setting_file)
   end
   let(:home_dir_pn) { Pathname.new(Dir.home) }
@@ -18,6 +18,8 @@ RSpec.describe Secretmgr::Cli do
                       private_key_filename: nil,
                       public_key_file_pn: nil,
                       private_key_file_pn: nil,
+                      default_public_key_file_pn: nil,
+                      default_private_key_file_pn: nil,
                       encrypted_secret_file_pn: nil,
                       encrypted_setting_file_pn: nil)
     # Create an instance of the Struct class

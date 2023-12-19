@@ -10,9 +10,18 @@ module Secretmgr
     RSA_PUBLIC_PEM_FILE = "id_rsa_no.pub.pem".freeze
     SETTING_FILE = "setting.yml".freeze
     SECRET_FILE = "secret.yml".freeze
+    DEFAULT_PUBLIC_KEYFILE = ".ssh/id_rsa.pub".freeze
+    DEFAULT_PRIVATE_KEYFILE = ".ssh/id_rsa".freeze
+    attr_reader :public_key, :public_keyfile_pn
+    attr_reader :private_key, :private_keyfile_pn
+    attr_reader :valid
 
-    def initialize(home_pn, secret_dir_pn, public_keyfile_pn, private_keyfile_pn)
-      @content = nil
+    def initialize(home_pn, secret_dir_pn,
+                   public_keyfile_pn: nil,
+                   private_keyfile_pn: nil,
+                   default_public_keyfile_pn: nil,
+                   default_private_keyfile_pn: nil)
+      @valid = false
       @home_pn = home_pn
       @secret_dir_pn = secret_dir_pn
 
@@ -22,7 +31,24 @@ module Secretmgr
 
       @public_key = create_public_key(public_keyfile_pn)
       @private_key = create_private_key(private_keyfile_pn)
-      @mode = OpenSSL::PKey::RSA::PKCS1_PADDING
+      if !@public_key && !@private_key
+        @public_keyfile_pn = public_keyfile_pn
+        @private_keyfile_pn = private_keyfile_pn
+        @valid = true
+      else
+        if !Util.nil_or_zero?(default_public_keyfile_pn) && !Util.nil_or_zero?(default_private_keyfile_pn)
+          Loggerxs.debug "Secret default_public_keyfile_pn=#{default_public_keyfile_pn}"
+          Loggerxs.debug "Secret default_private_keyfile_pn=#{default_private_keyfile_pn}"
+
+          @public_key, @private_key = create_keyfiles(default_public_keyfile_pn, default_private_keyfile_pn)
+          if !@public_key && !@private_key
+            @public_keyfile_pn = default_public_keyfile_pn
+            @private_keyfile_pn = default_private_keyfile_pn
+            @valid = true
+          end
+        end
+      end
+      @mode = OpenSSL::PKey::RSA::PKCS1_PADDING if @valid
     end
 
     def create_public_key(public_keyfile_pn)
@@ -136,6 +162,22 @@ module Secretmgr
       final_data = decx.final
       decrypted_data = data + final_data
       decrypted_data.force_encoding("UTF-8")
+    end
+
+    def create_keyfiles(public_keyfile_pn, private_keyfile_pn)
+      rsa_key = OpenSSL::PKey::RSA.new(2048)
+      Loggerxs.debug "############## create_keyfiles private_keyfile_pn=#{private_keyfile_pn}"
+      Loggerxs.debug "############## create_keyfiles rsa_key=#{rsa_key}"
+      # 秘密鍵を生成
+      private_key = rsa_key.to_pem
+      Loggerxs.debug "############## create_keyfiles private_key=#{private_key}"
+      File.write(private_keyfile_pn, private_key)
+
+      # 公開鍵を生成
+      public_key = rsa_key.public_key.to_pem
+      Loggerxs.debug "############## create_keyfiles public_key=#{public_key}"
+      File.write(public_keyfile_pn, public_key)
+      [public_key, private_key]
     end
   end
 end
