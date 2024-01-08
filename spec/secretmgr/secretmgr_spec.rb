@@ -36,11 +36,6 @@ RSpec.describe Secretmgr do
   end
 
   it "encrypt plain text" do
-    # Secretmgr::Secretmgr.reset_init_count()
-    log_level = :info
-    #log_level = :debug
-    Secretmgr::Secretmgr.log_init(log_level)
-    #
     tdata = test_data_setup(test_data_dir_pn, "id_rsa_no_y.pub.pem.1", "id_rsa_no_y")
     tdata.encrypted_setting_file.delete
     tdata.encrypted_secret_file.delete
@@ -52,7 +47,6 @@ RSpec.describe Secretmgr do
   end
 
   it "decrypt encrypted text" do
-    # Secretmgr::Secretmgr.reset_init_count()
     tdata = test_data_setup(test_data_dir_pn, "id_rsa_no_y.pub.pem.1", "id_rsa_no_y")
     target = "TEST"
     subtarget = "subtest"
@@ -65,7 +59,6 @@ RSpec.describe Secretmgr do
   end
 
   it "encrypt plain text with home directory" do
-    # Secretmgr::Secretmgr.reset_init_count()
     tdata = test_data_setup(home_dir_pn, "id_rsa_no.pub.pem.1", "id_rsa_no")
     inst = Secretmgr::Secretmgr.new(tdata.secret_dir, tdata.public_keyfile, tdata.private_keyfile)
     inst.set_setting_for_plain(tdata.plain_setting_file, tdata.plain_secret_file)
@@ -76,7 +69,6 @@ RSpec.describe Secretmgr do
 
   # Define a Struct class
   it "decrypt encrypted text with home directory" do
-    # Secretmgr::Secretmgr.reset_init_count()
     tdata = test_data_setup(home_dir_pn, "id_rsa_no.pub.pem.1", "id_rsa_no")
 
     target = "TEST"

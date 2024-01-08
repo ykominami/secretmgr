@@ -29,6 +29,8 @@ module Secretmgr
       @opt.on("-s", "--secret_dir sdir") { |v| @params[:secret_dir] = v }
       @opt.on("-u", "--public_keyfile file") { |v| @params[:public_keyfile] = v }
       @opt.on("-r", "--private_keyfile file") { |v| @params[:private_keyfile] = v }
+      @opt.on("-U", "--default_public_keyfile file") { |v| @params[:default_public_keyfile] = v }
+      @opt.on("-R", "--default_private_keyfile file") { |v| @params[:default_private_keyfile] = v }
 
       @opt.on("-F", "--encrypted_setting_file file") { |v| @params[:encrypted_setting_file] = v }
       @opt.on("-e", "--encrypted_secret_file file") { |v| @params[:encrypted_secret_file] = v }
@@ -52,6 +54,8 @@ module Secretmgr
       @encrypted_secret_file_pn = Pathname.new(@params[:encrypted_secret_file]) if @params[:encrypted_secret_file]
       @public_keyfile_pn = Pathname.new(@params[:public_keyfile]) if @params[:public_keyfile]
       @private_keyfile_pn = Pathname.new(@params[:private_keyfile]) if @params[:private_keyfile]
+      @default_public_keyfile_pn = Pathname.new(@params[:default_public_keyfile]) if @params[:default_public_keyfile]
+      @default_private_keyfile_pn = Pathname.new(@params[:default_private_keyfile]) if @params[:default_private_keyfile]
 
       @plain_setting_file_pn = Pathname.new(@params[:plain_setting_file]) if @params[:plain_setting_file]
       @plain_secret_file_pn = Pathname.new(@params[:plain_secret_file]) if @params[:plain_secret_file]
@@ -70,6 +74,8 @@ module Secretmgr
         fail_count += file_option_error?(@plain_secret_file_pn, "-p")
         fail_count += file_specified_option_error?(@encrypted_setting_file_pn, "-F")
         fail_count += file_specified_option_error?(@encrypted_secret_file_pn, "-e")
+        fail_count += file_specified_option_error?(@default_public_keyfile_pn, "-U")
+        fail_count += file_specified_option_error?(@default_private_keyfile_pn, "-R")
       else
         # debugger
         @target = @params[:target]
@@ -78,6 +84,8 @@ module Secretmgr
         fail_count += string_option_error?(@subtarget, "-b")
         fail_count += file_option_error?(@encrypted_setting_file_pn, "-F")
         fail_count += file_option_error?(@encrypted_secret_file_pn, "-e")
+        fail_count += file_option_error?(@default_public_keyfile_pn, "-U")
+        fail_count += file_option_error?(@default_private_keyfile_pn, "-R")
       end
 
       ret = false if fail_count.positive?
@@ -132,7 +140,11 @@ module Secretmgr
 
     def execute
       ret = nil
-      inst = Secretmgr.new(@secret_dir_pn, @public_keyfile_pn, @private_keyfile_pn)
+      inst = Secretmgr.new(@secret_dir_pn,
+                           public_keyfile_pn: @public_keyfile_pn,
+                           private_keyfile_pn: @private_keyfile_pn,
+                           default_public_keyfile_pn: @default_public_keyfile_pn,
+                           default_private_keyfile_pn: @default_private_keyfile_pn)
       return EXIT_CODE_FAILURE unless inst.valid?
 
       inst.set_setting_for_encrypted(@encrypted_setting_file_pn, @encrypted_secret_file_pn)

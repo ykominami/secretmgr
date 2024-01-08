@@ -10,9 +10,16 @@ module Secretmgr
     RSA_PUBLIC_PEM_FILE = "id_rsa_no.pub.pem".freeze
     SETTING_FILE = "setting.yml".freeze
     SECRET_FILE = "secret.yml".freeze
+    DEFAULT_PUBLIC_KEYFILE = ".ssh/id_rsa.pub".freeze
+    DEFAULT_PRIVATE_KEYFILE = ".ssh/id_rsa".freeze
+    attr_reader :public_key, :public_keyfile_pn
+    attr_reader :private_key, :private_keyfile_pn
+    attr_reader :valid
 
-    def initialize(home_pn, secret_dir_pn, public_keyfile_pn, private_keyfile_pn)
-      @content = nil
+    def initialize(home_pn, secret_dir_pn,
+                   public_keyfile_pn: nil,
+                   private_keyfile_pn: nil)
+      @valid = false
       @home_pn = home_pn
       @secret_dir_pn = secret_dir_pn
 
@@ -22,7 +29,19 @@ module Secretmgr
 
       @public_key = create_public_key(public_keyfile_pn)
       @private_key = create_private_key(private_keyfile_pn)
-      @mode = OpenSSL::PKey::RSA::PKCS1_PADDING
+      if !@public_key && !@private_key
+        @public_keyfile_pn = public_keyfile_pn
+        @private_keyfile_pn = private_keyfile_pn
+        @valid = true
+      else
+        @public_key, @private_key = create_keyfiles()
+        if !@public_key && !@private_key
+          @public_keyfile_pn = default_public_keyfile_pn
+          @private_keyfile_pn = default_private_keyfile_pn
+          @valid = true
+        end
+      end
+      @mode = OpenSSL::PKey::RSA::PKCS1_PADDING if @valid
     end
 
     def create_public_key(public_keyfile_pn)
@@ -136,6 +155,17 @@ module Secretmgr
       final_data = decx.final
       decrypted_data = data + final_data
       decrypted_data.force_encoding("UTF-8")
+    end
+
+    def create_keyfiles()
+      rsa_key = OpenSSL::PKey::RSA.new(2048)
+      # 秘密鍵を生成
+      private_key = rsa_key.to_pem
+
+      # 公開鍵を生成
+      public_key = rsa_key.public_key.to_pem
+      Loggerxs.debug "############## create_keyfiles public_key=#{public_key}"
+      [public_key, private_key]
     end
   end
 end
