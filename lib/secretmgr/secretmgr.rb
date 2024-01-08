@@ -63,7 +63,7 @@ module Secretmgr
     end
 
     def valid?
-      !@secret.valid
+      @secret.valid
     end
 
     def set_setting_for_plain(plain_setting_file_pn, plain_secret_file_pn)
