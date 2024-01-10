@@ -4,6 +4,8 @@ module Secretmgr
 
     include RSpec::Matchers
 
+    RSA_KEY_SIZE = 2048
+
     FORMAT_FILE = "format.txt".freeze
     SSH_DIR = ".ssh".freeze
     RSA_PRIVATE_FILE = "id_rsa_no".freeze
@@ -12,36 +14,57 @@ module Secretmgr
     SECRET_FILE = "secret.yml".freeze
     DEFAULT_PUBLIC_KEYFILE = ".ssh/id_rsa.pub".freeze
     DEFAULT_PRIVATE_KEYFILE = ".ssh/id_rsa".freeze
-    attr_reader :public_key, :public_keyfile_pn
-    attr_reader :private_key, :private_keyfile_pn
-    attr_reader :valid
+    attr_reader :public_key, :public_keyfile_pn, :private_key, :private_keyfile_pn, :valid
 
-    def initialize(home_pn, secret_dir_pn,
+    def initialize(setting, home_pn, secret_dir_pn, ope,
+                   default_public_keyfile_pn,
+                   default_private_keyfile_pn,
                    public_keyfile_pn: nil,
                    private_keyfile_pn: nil)
-      @valid = false
-      @home_pn = home_pn
+      # p "Secret.initialize public_keyfile_pn=#{public_keyfile_pn}"
+      # p "Secret.initialize private_keyfile_pn~#{private_keyfile_pn}"
+      @mode = OpenSSL::PKey::RSA::PKCS1_OAEP_PADDING
+      @setting = setting
+      # p "Secret.new secret_dir_pn=#{secret_dir_pn}"
       @secret_dir_pn = secret_dir_pn
+      @secret_dir_pn = Pathname.new(@secret_dir_pn) unless @secret_dir_pn.instance_of?(Pathname)
+      # p "@Secret.new secret_dir_pn=#{@secret_dir_pn}"
 
+      @home_pn = home_pn
       @format_config = Config.new(@secret_dir_pn, FORMAT_FILE)
-      Loggerxs.debug "Secret public_keyfile_pn=#{public_keyfile_pn}"
-      Loggerxs.debug "Secret private_keyfile_pn=#{private_keyfile_pn}"
 
-      @public_key = create_public_key(public_keyfile_pn)
-      @private_key = create_private_key(private_keyfile_pn)
-      if !@public_key && !@private_key
-        @public_keyfile_pn = public_keyfile_pn
-        @private_keyfile_pn = private_keyfile_pn
-        @valid = true
-      else
-        @public_key, @private_key = create_keyfiles()
-        if !@public_key && !@private_key
-          @public_keyfile_pn = default_public_keyfile_pn
-          @private_keyfile_pn = default_private_keyfile_pn
-          @valid = true
+      @private_key = nil
+      @public_key = nil
+      @private_key = create_private_key(private_keyfile_pn) if private_keyfile_pn
+      @public_key = create_public_key(public_keyfile_pn) if public_keyfile_pn
+
+      @valid = false
+
+      if @private_key.nil? && @public_key.nil?
+        case ope
+        when "setup"
+          # @public_key, @private_key = create_keyfiles()
+          @rsa_key, @public_key, @public_key_str, @private_key, @private_key_str = create_keyfiles
+          default_public_keyfile_pn ||= @setting.get("default_public_keyfile_pn")
+          default_private_keyfile_pn ||= @setting.get("default_private_keyfile_pn")
+          output_public_key(default_public_keyfile_pn)
+          output_private_key(default_private_keyfile_pn)
+          @setting.set("default_public_keyfile_pn", default_public_keyfile_pn)
+          @setting.set("default_private_keyfile_pn", default_private_keyfile_pn)
+          @setting.save
+        else
+          default_public_keyfile_pn = @setting.get("default_public_keyfile_pn")
+          default_private_keyfile_pn = @setting.get("default_private_keyfile_pn")
+          @private_key = create_private_key(default_private_keyfile_pn)
+          @public_key = create_public_key(default_public_keyfile_pn)
         end
       end
-      @mode = OpenSSL::PKey::RSA::PKCS1_PADDING if @valid
+      @valid = true
+    end
+
+    def output_public_key(public_keyfile_pn)
+      File.write(public_keyfile_pn, @public_key_str)
+      Loggerxs.debug "0 public_keyfile_pn=#{public_keyfile_pn}"
     end
 
     def create_public_key(public_keyfile_pn)
@@ -49,11 +72,7 @@ module Secretmgr
       pub_key = nil
       pub_key = File.read(public_keyfile_pn) if public_keyfile_pn.exist?
       Loggerxs.debug "0 public_keyfile_pn=#{public_keyfile_pn}"
-      if pub_key.nil? || pub_key.empty?
-        pub_pn = @home_pn + SSH_DIR + RSA_PUBLIC_PEM_FILE
-        pub_key = File.read(pub_pn)
-        Loggerxs.debug "2 pub_key="
-      end
+
       unless pub_key.nil?
         # 鍵をOpenSSLのオブジェクトにする
         key_obj = OpenSSL::PKey::RSA.new(pub_key)
@@ -62,19 +81,18 @@ module Secretmgr
       key_obj
     end
 
+    def output_private_key(private_keyfile_pn)
+      File.write(private_keyfile_pn, @private_key_str)
+      Loggerxs.debug "0 private_keyfile_pn=#{private_keyfile_pn}"
+    end
+
     def create_private_key(private_keyfile_pn)
       key_obj = nil
       private_key = nil
       Loggerxs.debug "20 private_keyfile_pn=#{private_keyfile_pn}"
       private_key = File.read(private_keyfile_pn) if private_keyfile_pn.exist?
-      Loggerxs.debug "21 private_key="
-      if private_key.nil? || private_key.empty?
-        private_pn = @home_pn + SSH_DIR + RSA_PRIVATE_FILE
-        private_key = File.read(private_pn)
-        Loggerxs.debug "22 private_key="
-      end
       unless private_key.nil?
-        private_key = File.read(private_keyfile_pn)
+        # 鍵をOpenSSLのオブジェクトにする
         key_obj = OpenSSL::PKey::RSA.new(private_key)
         Loggerxs.debug "23 private_key="
       end
@@ -107,12 +125,31 @@ module Secretmgr
     end
 
     def encrypt_with_public_key(data)
-      Base64.encode64(
-        @public_key.public_encrypt(
-          data,
-          OpenSSL::PKey::RSA::PKCS1_OAEP_PADDING
-        )
-      ).delete("\n")
+      key = nil
+      if @public_key.nil?
+        return nil if @rsa_key.nil?
+
+        key = @rsa_key
+      else
+        key = @public_key
+      end
+      return unless key
+
+      # p "data.size=#{data.size}"
+      ecrypted_text = key.public_encrypt(
+        data,
+        @mode
+      )
+      Base64.encode64(ecrypted_text)
+      #         # p "base64_test.size=#{base64_text.size}"
+      #         #
+      #         decrypted_text = @private_key_2.private_decrypt(
+      #           ecrypted_text,
+      #           @mode
+      #         )
+      #
+      #         # p "decrypted_text.size=#{decrypted_text.size}"
+      #         # p "decrypted_text=#{decrypted_text}"
     end
 
     def encrypt_and_copy(src_pn, relative_path, key, ivx)
@@ -128,13 +165,30 @@ module Secretmgr
     end
 
     def decrypt_with_private_key(base64_text)
-      @private_key.private_decrypt(
-        Base64.decode64(base64_text),
-        OpenSSL::PKey::RSA::PKCS1_OAEP_PADDING
+      key = nil
+      if @private_key.nil?
+        return nil if @rsa_key.nil?
+
+        key = @rsa_key
+      else
+        key = @private_key
+      end
+      return unless key
+
+      plain_text = Base64.decode64(base64_text)
+      #         p "decrypt_with_private_key base64_text.size=#{base64_text.size}"
+      #         p "decrypt_with_private_key base64_text=#{base64_text}"
+      #         p "decrypt_with_private_key @private_key=#{@private_key}"
+      #         p "decrypt_with_private_key @rsa_key=#{@rsa_key}"
+      #         p "decrypt_with_private_key key=#{key}"
+      #         p "decrypt_with_private_key plain_text.size=#{plain_text.size}"
+      key.private_decrypt(
+        plain_text,
+        @mode
       )
     end
 
-    # 引数 str を暗号化した結果を返す
+    # 引数 plaintext を暗号化した結果を返す
     def encrypt_with_common_key(plaintext, key, ivalue)
       encx = OpenSSL::Cipher.new(CIPHER_NAME)
       encx.encrypt
@@ -157,15 +211,18 @@ module Secretmgr
       decrypted_data.force_encoding("UTF-8")
     end
 
-    def create_keyfiles()
-      rsa_key = OpenSSL::PKey::RSA.new(2048)
+    def create_keyfiles
+      rsa_key = OpenSSL::PKey::RSA.new(RSA_KEY_SIZE)
       # 秘密鍵を生成
-      private_key = rsa_key.to_pem
+      private_key = rsa_key
+      private_key_str = rsa_key.to_pem
 
       # 公開鍵を生成
-      public_key = rsa_key.public_key.to_pem
+      public_key = rsa_key.public_key
+      public_key_str = public_key.to_pem
+
       Loggerxs.debug "############## create_keyfiles public_key=#{public_key}"
-      [public_key, private_key]
+      [rsa_key, public_key, public_key_str, private_key, private_key_str]
     end
   end
 end
