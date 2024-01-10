@@ -8,6 +8,7 @@ module Secretmgr
   class Secretmgr
     attr_reader :decrypted_text, :secret
 
+    @log_level = nil
     @init_count = 0
     # @setting_file = "setting.yml"
     JSON_FILE_DIR = "JSON_FILE"
@@ -18,11 +19,14 @@ module Secretmgr
     YML = "yml"
     # @dot_yml = "yml"
     # @secret_dir = "secret"
-    DEFAULT_PRIVATE_KEYFILE = ".ss/id_rsa"
-    DEFAULT_PUBLIC_KEYFILE = ".ss/id_rsa.pub"
+    DEFAULT_PRIVATE_KEYFILE = ".ssh/id_rsa"
+    DEFAULT_PUBLIC_KEYFILE = ".ssh/id_rsa.pub"
 
     class << self
-      def log_init(log_level = :info)
+      def log_init(log_level)
+        return unless @log_level.nil?
+
+        @log_level = log_level
         Loggerxs.init("log_", "log.txt", ".", true, log_level) if @init_count.zero?
         @init_count += 1
       end
@@ -30,73 +34,101 @@ module Secretmgr
       def reset_init_count
         @init_count = 0
       end
-
-      def create(secret_dir_pn, public_keyfile_pn, private_keyfile_pn)
-        @inst = Secretmgr.new(secret_dir_pn, public_keyfile_pn, private_keyfile_pn)
-        @inst.set_setting_for_data(plain_setting_file_pn, plain_secret_file_pn)
-        @inst
-      end
-
-      # attr_reader :setting_file, :format_file, :ssh_dir, :pem_dir, :no_pass_dir, :no_pass_rsa_dir, :json_file_dir,
-      #            :setting_key, :setting_iv, :format_json, :format_yaml, :secret_dir
     end
 
-    def initialize(secret_dir_pn,
-                   public_keyfile_pn: nil,
-                   private_keyfile_pn: nil,
-                   default_public_keyfile_pn: nil,
-                   default_private_keyfile_pn: nil)
-      # log_level = :debug
+    def initialize(seting, secret_dir_pn, secret_key_dir_pn, ope,
+                   public_keyfile_pn: nil, private_keyfile_pn: nil)
       log_level = :info
+      # log_level = :debug
       Secretmgr.log_init(log_level)
 
+      @setting = seting
       home_pn = Pathname.new(Dir.home)
-      valid_public_keyfile_pn = valid_public_keyfile(public_keyfile_pn)
-      valid_private_keyfile_pn = valid_private_keyfile(private_keyfile_pn)
-      if valid_public_keyfile_pn && valid_private_keyfile_pn
-        @secret = Secret.new(home_pn, secret_dir_pn, public_keyfile_pn: valid_public_keyfile_pn,
-                                                     private_keyfile_pn: valid_private_keyfile_pn)
-      else
-        @secret = Secret.new(home_pn, secret_dir_pn, default_public_keyfile_pn: default_public_keyfile_pn,
-                                                     deault_public_keyfile_pn: default_private_keyfile_pn)
-      end
+      secret_dir_pn = Pathname.new(secret_dir_pn) unless secret_dir_pn.instance_of?(Pathname)
+      secret_key_dir_pn = Pathname.new(secret_key_dir_pn) unless secret_key_dir_pn.instance_of?(Pathname)
+      secret_key_dir_pn.mkdir unless secret_key_dir_pn.exist?
+      default_public_keyfile_pn = secret_key_dir_pn + "id_rsa.pub"
+      default_private_keyfile_pn = secret_key_dir_pn + "id_rsa"
+      public_keyfile_pn = Pathname.new(public_keyfile_pn) if public_keyfile_pn
+      private_keyfile_pn = Pathname.new(private_keyfile_pn) if private_keyfile_pn
+
+      @secret = Secret.new(@setting, home_pn, secret_dir_pn, ope,
+                           default_public_keyfile_pn,
+                           default_private_keyfile_pn,
+                           public_keyfile_pn: public_keyfile_pn,
+                           private_keyfile_pn: private_keyfile_pn)
     end
 
     def valid?
       @secret.valid
+      # Loggerxs.debug "1 ret=#{ret}"
+      # p  "2 ret=#{ret}"
+    end
+
+    def output_public_key(public_keyfile_pn)
+      @secret.output_public_key(public_keyfile_pn)
+    end
+
+    def create_public_key(public_keyfile_pn)
+      @secret.create_public_key(public_keyfile_pn)
+    end
+
+    def output_private_key(private_keyfile_pn)
+      @secret.output_private_key(private_keyfile_pn)
+    end
+
+    def create_private_key(private_keyfile_pn)
+      @secret.create_private_key(private_keyfile_pn)
     end
 
     def set_setting_for_plain(plain_setting_file_pn, plain_secret_file_pn)
-      @plain_setting_file_pn = plain_setting_file_pn
-      @plain_secret_file_pn = plain_secret_file_pn
+      @plain_setting_file_pn = Pathname.new(@plain_setting_file_pn) if @plain_setting_file_pn
+      @plain_setting_file_pn ||= Pathname.new(plain_setting_file_pn)
+      @plain_secret_file_pn = Pathname.new(@plain_secret_file_pn) if @plain_secret_file_pn
+      @plain_secret_file_pn ||= Pathname.new(plain_secret_file_pn)
       @plain_dir_pn = @plain_setting_file_pn.parent
       @encrypted_setting_file_pn = @secret.encrypted_setting_file_pn
+      @encrypted_secret_file_pn = @secret.encrypted_secret_file_pn
     end
 
     def set_setting_for_encrypted(encrypted_setting_file_pn, encrypted_secret_file_pn)
-      @encrypted_setting_file_pn = encrypted_setting_file_pn
-      @encrypted_secret_file_pn = encrypted_secret_file_pn
+      @encrypted_setting_file_pn = Pathname.new(encrypted_setting_file_pn)
+      @encrypted_secret_file_pn = Pathname.new(encrypted_secret_file_pn)
     end
 
     def setup
+      # p "###### setup_setting"
       setup_setting
+      # p "###### setup_secret"
       setup_secret
+      # p "###### setup_secret_for_json_file"
       setup_secret_for_json_file
     end
 
     def setup_setting
       content = File.read(@plain_setting_file_pn)
+      # p "setup_setting content.size=#{content.size}"
+      # p "setup_setting content=#{content}"
 
       @setting = YAML.safe_load(content)
+      # p "setup_setting @setting=#{@setting}"
+
       Loggerxs.debug @setting
       # pp "@setting=#{@setting}"
       # puts "setup_setting    @setting=#{@setting}"
       encrypted_text = @secret.encrypt_with_public_key(content)
+      # puts "setup_setting encrypted_text.size=#{encrypted_text.size}"
+      # puts "setup_setting encrypted_text=#{encrypted_text}"
+      #
+      @secret.decrypt_with_private_key(encrypted_text)
+      # puts "setup_setting decrypted_text=#{decrypted_text}"
+      # puts "setup_setting decrypted_text.size=#{decrypted_text.size}"
+
       dest_setting_file_pn = @secret.make_pair_file_pn(@plain_setting_file_pn, YML)
 
       Loggerxs.debug "setup_setting dest_setting_file_pn=#{dest_setting_file_pn}"
-      Loggerxs.debug "setup_setting dest_setting_file_pn=#{dest_setting_file_pn}"
       File.write(dest_setting_file_pn, encrypted_text)
+      # p "dest_setting_file_pn=#{dest_setting_file_pn}"
     end
 
     def setup_secret

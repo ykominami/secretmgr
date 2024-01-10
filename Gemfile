@@ -5,6 +5,9 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in secretmgr.gemspec
 gemspec
 
+# gem "loggerx", path: "../loggerx"
+gem "loggerx", "~> 0.2.0"
+
 group :development, :test do
   gem "rake", "~> 13.0"
   gem "rspec", "~> 3.0"
@@ -15,9 +18,6 @@ group :development, :test do
   gem "multi_json"
 
   gem "debug"
-
-  # gem "loggerx", path: "../loggerx"
-  gem "loggerx", "~> 0.2.0"
 
   gem "rufo"
 end
