@@ -15,7 +15,7 @@ group :development, :test do
   gem "rubocop-rake", require: false
   gem "rubocop-rspec", require: false
 
-  gem "multi_json"
+  # gem "multi_json"
 
   gem "debug"
 
