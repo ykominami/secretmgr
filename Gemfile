@@ -5,6 +5,8 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in secretmgr.gemspec
 gemspec
 
+gem "multi_json"
+
 # gem "loggerx", path: "../loggerx"
 gem "loggerx", "~> 0.2.0"
 

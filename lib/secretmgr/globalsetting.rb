@@ -38,12 +38,12 @@ module Secretmgr
 
     def set(key, value)
       @obj[key] = case key
-        when "default_public_keyfile_pn", "default_private_keyfile_pn"
-          value.to_s
-          # p "Globalsetting.set @obj=#{@obj}|"
-        else
-          value
-        end
+                  when "default_public_keyfile_pn", "default_private_keyfile_pn"
+                    value.to_s
+                  # p "Globalsetting.set @obj=#{@obj}|"
+                  else
+                    value
+                  end
     end
   end
 end

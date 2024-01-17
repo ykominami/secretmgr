@@ -21,8 +21,7 @@ Layout/LineLength:
 
 Style/Documentation:
   Enabled: false
-
-#追加
-Style/FrozenStringLiteralComment:
+#
+Naming/AccessorMethodName:
   Enabled: false
 

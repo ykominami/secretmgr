@@ -32,8 +32,8 @@ RSpec.describe Secretmgr do
     tdata.encrypted_secret_file_pn.delete if tdata.encrypted_secret_file_pn.exist?
     global_setting_file_pn = Pathname.new(tdata.global_setting_file)
     global_setting = create_globalsetting(global_setting_file_pn)
-    #p "secretmgr_spec   tdata.secret_dir_pn=#{tdata.secret_dir_pn}"
-    #p "secretmgr_spec   tdata.public_keyfile_pn=#{tdata.public_keyfile_pn}"
+    # p "secretmgr_spec   tdata.secret_dir_pn=#{tdata.secret_dir_pn}"
+    # p "secretmgr_spec   tdata.public_keyfile_pn=#{tdata.public_keyfile_pn}"
     inst = Secretmgr::Secretmgr.new(global_setting, tdata.secret_dir_pn, tdata.secret_key_dir_pn, "setup",
                                     public_keyfile_pn: tdata.public_keyfile_pn)
     inst.set_setting_for_plain(tdata.plain_setting_file, tdata.plain_secret_file)

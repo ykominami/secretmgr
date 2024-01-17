@@ -194,14 +194,14 @@ module Secretmgr
       begin
         @decrpyted_content = @secret.decrypt_with_common_key(encrypted_content, @key, @iv)
         @content = case @file_format
-          when FORMAT_JSON
-            @decrpyted_content
-          when FORMAT_YAML
-            @secret_content = YAML.safe_load(@decrpyted_content)
-            @sub_target ? @secret_content[@target][@sub_target] : @secret_content[@target]
-          else
-            ""
-          end
+                   when FORMAT_JSON
+                     @decrpyted_content
+                   when FORMAT_YAML
+                     @secret_content = YAML.safe_load(@decrpyted_content)
+                     @sub_target ? @secret_content[@target][@sub_target] : @secret_content[@target]
+                   else
+                     ""
+                   end
       rescue StandardError => e
         Loggerxs.error e
         Loggerxs.error e.message

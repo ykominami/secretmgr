@@ -15,8 +15,8 @@ module Secretmgr
       result = keys.flatten.each_with_object([@hash]) do |item, memo|
         hash = memo[0]
         memo[0] = if hash
-            (hash.instance_of?(Hash) ? hash[item] : nil)
-          end
+                    (hash.instance_of?(Hash) ? hash[item] : nil)
+                  end
       end
       Loggerxs.debug "hash=#{hash}"
       result ? (result[0] || @hash["default"]) : @hash["default"]
