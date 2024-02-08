@@ -119,9 +119,23 @@ def encrypt_decrypt(plaintext, key, ivalue)
   # str に与えた文字列を暗号化します。
   encrypted_text = encx.update(plaintext) + encx.final
   base64_text = Base64.encode64(encrypted_text)
+<<<<<<< HEAD
   File.write("a.txt", base64_text)
   base64_text2 = File.read("a.txt")
   plaintext = Base64.decode64(base64_text2)
+||||||| parent of dceada2 (fixes #12 fix rspec error)
+  File.open("a.txt", "w") do |file|
+    file.write(base64_text)
+  end
+  base64_text_2 = File.read("a.txt")
+  plaintext = Base64.decode64(base64_text_2)
+=======
+  File.open("a.txt", "w") do |file|
+    file.write(base64_text)
+  end
+  File.read("a.txt")
+  plaintext = Base64.decode64(base64_text2)
+>>>>>>> dceada2 (fixes #12 fix rspec error)
 
   decx = OpenSSL::Cipher.new(CIPHER_NAME)
   decx.decrypt
