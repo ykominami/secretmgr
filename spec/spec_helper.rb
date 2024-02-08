@@ -25,8 +25,8 @@ def encrypt_decrypt(plaintext, key, ivalue)
   File.open("a.txt", "w") do |file|
     file.write(base64_text)
   end
-  base64_text_2 = File.read("a.txt")
-  plaintext = Base64.decode64(base64_text_2)
+  File.read("a.txt")
+  plaintext = Base64.decode64(base64_text2)
 
   decx = OpenSSL::Cipher.new(CIPHER_NAME)
   decx.decrypt

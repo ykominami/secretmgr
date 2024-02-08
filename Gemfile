@@ -11,4 +11,4 @@ gem "rubocop", "~> 1.21"
 
 gem "multi_json"
 gem "ykutils"
-gem "ykxutils"
+gem "ykxutils", path: "../ykxutils"

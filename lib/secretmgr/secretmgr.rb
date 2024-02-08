@@ -29,47 +29,7 @@ module Secretmgr
       end
 
       attr_reader :setting_file, :format_file, :ssh_dir, :pem_dir, :no_pass_dir, :no_pass_rsa_dir, :json_file_dir,
-                  :setting_key, :setting_iv, :format_json, :format_yaml
-
-	  def setting_file
-	  	  @setting_file
-	  end
-
-	  def format_file
-	  	  @format_file
-	  end
-
-	  def ssh_dir
-	  	  @ssh_dir
-	  end
-
-	  def pem_dir
-	  	  @pem_dir
-	  end
-
-	  def no_pass_rsa_dir
-	  	  @no_pass_rsa_dir
-	  end
-
-	  def json_file_dir
-	  	  @json_file_dir
-	  end
-
-	  def setting_key
-	  	  @setting_key
-	  end
-
-	  def setting_iv
-	  	  @setting_iv
-	  end
-
-	  def format_json
-	  	  @format_json
-	  end
-
-	  def format_yaml
-	  	  @format_yaml
-	  end
+                  :setting_key, :setting_iv, :format_json, :format_yaml, :secret_dir
 
       def str_yml
         @yml
@@ -78,11 +38,6 @@ module Secretmgr
       def str_dot_yml
         @dot_yml
       end
-
-      def secret_dir
-      	  @secret_dir
-      end
-
     end
 
     def initialize(secret_dir_pn, plain_setting_file_pn, plain_secret_file_pn)
@@ -119,11 +74,11 @@ module Secretmgr
     end
 
     def setup_setting
-    	puts "setup_setting @plain_setting_file_pn=#{@plain_setting_file_pn}"
+      puts "setup_setting @plain_setting_file_pn=#{@plain_setting_file_pn}"
       content = File.read(@plain_setting_file_pn)
       puts "setup_setting content=#{content}"
       # @setting = Ykxutils.yaml_load_compati(content)
-      @setting = YAML.yaml_load(content)
+      @setting = YAML.safe_load(content)
       puts "setup_setting @setting=#{@setting}"
       # content = YAML.dump(@setting)
       encrypted_text = encrypt_with_public_key(content)
@@ -144,9 +99,9 @@ module Secretmgr
     def setup_secret
       plaintext = File.read(@plain_secret_file_pn)
       puts "setup_secret @setting=#{@setting}"
-      encrypted_text = encrypt_with_common_key(plaintext, 
-      @setting[Secretmgr.setting_key], 
-      @setting[Secretmgr.setting_iv])
+      encrypted_text = encrypt_with_common_key(plaintext,
+                                               @setting[Secretmgr.setting_key],
+                                               @setting[Secretmgr.setting_iv])
       dest_secret_file_pn = make_pair_file_pn(@secret_dir_pn, @plain_secret_file_pn, Secretmgr.str_yml)
       dest_secret_file_pn.realpath
       File.write(dest_secret_file_pn, encrypted_text)
@@ -191,9 +146,9 @@ module Secretmgr
       begin
         @decrpyted_content = decrypt_with_common_key(encrypted_content, @key, @iv)
         @content = case @file_format
-                   when format_json
+                   when @format_json
                      @decrpyted_content
-                   when format_yaml
+                   when @format_yaml
                      @secret = YAML.safe_load(@decrpyted_content)
                      @sub_target ? @secret[@target][@sub_target] : @secret[@target]
                    else
@@ -230,7 +185,7 @@ module Secretmgr
     end
 
     # 引数 str を暗号化した結果を返す
-    def encrypt_with_common_key(plaintext, key, _ivalue)
+    def encrypt_with_common_key(plaintext, key, ivvalue)
       encx = OpenSSL::Cipher.new(CIPHER_NAME)
       encx.encrypt
       encx.key = key
