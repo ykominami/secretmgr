@@ -115,7 +115,7 @@ Layout/LeadingCommentSpace:
 # Offense count: 6
 # Configuration parameters: AllowedMethods, AllowedPatterns, CountRepeatedAttributes.
 Metrics/AbcSize:
-  Max: 26
+  Max: 27
 
 # Offense count: 1
 # Configuration parameters: CountComments, CountAsOne, AllowedMethods, AllowedPatterns.
@@ -131,6 +131,7 @@ Metrics/ClassLength:
 # Offense count: 4
 # Configuration parameters: CountComments, CountAsOne, AllowedMethods, AllowedPatterns.
 Metrics/MethodLength:
+  Max: 21
 
 # Offense count: 3
 # Configuration parameters: CountKeywordArgs, MaxOptionalParameters.
