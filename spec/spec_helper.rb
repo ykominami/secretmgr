@@ -119,8 +119,7 @@ def encrypt_decrypt(plaintext, key, ivalue)
   # str に与えた文字列を暗号化します。
   encrypted_text = encx.update(plaintext) + encx.final
   base64_text = Base64.encode64(encrypted_text)
-  File.write("a.txt", base64_text)
-  base64_text2 = File.read("a.txt")
+  File.read("a.txt")
   plaintext = Base64.decode64(base64_text2)
 
   decx = OpenSSL::Cipher.new(CIPHER_NAME)
