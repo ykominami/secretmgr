@@ -115,7 +115,19 @@ Layout/LeadingCommentSpace:
 # Offense count: 6
 # Configuration parameters: AllowedMethods, AllowedPatterns, CountRepeatedAttributes.
 Metrics/AbcSize:
+<<<<<<< HEAD
   Max: 26
+||||||| 77ce432
+  Max: 27
+=======
+  Max: 26
+
+# Offense count: 1
+# Configuration parameters: CountComments, CountAsOne, AllowedMethods, AllowedPatterns.
+# AllowedMethods: refine
+Metrics/BlockLength:
+  Max: 28
+>>>>>>> dceada21557b1afce64bd884ddfc5a087ae9e1da
 
 # Offense count: 1
 # Configuration parameters: CountComments, CountAsOne, AllowedMethods, AllowedPatterns.
@@ -131,6 +143,12 @@ Metrics/ClassLength:
 # Offense count: 4
 # Configuration parameters: CountComments, CountAsOne, AllowedMethods, AllowedPatterns.
 Metrics/MethodLength:
+<<<<<<< HEAD
+||||||| 77ce432
+  Max: 21
+=======
+  Max: 20
+>>>>>>> dceada21557b1afce64bd884ddfc5a087ae9e1da
 
 # Offense count: 3
 # Configuration parameters: CountKeywordArgs, MaxOptionalParameters.
