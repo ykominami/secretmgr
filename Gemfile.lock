@@ -1,13 +1,4 @@
 PATH
-  remote: ../ykxutils
-  specs:
-    ykxutils (0.1.8)
-      bundler
-      erubi
-      rake (~> 13.0)
-      tilt
-
-PATH
   remote: .
   specs:
     secretmgr (0.2.0)
@@ -102,6 +93,11 @@ GEM
       erubi
       filex
       tilt
+    ykxutils (0.1.8)
+      bundler
+      erubi
+      rake (~> 13.0)
+      tilt
 
 PLATFORMS
   x64-mingw-ucrt
@@ -120,7 +116,7 @@ DEPENDENCIES
   secretmgr!
   yard
   ykutils
-  ykxutils!
+  ykxutils
 
 BUNDLED WITH
    2.5.3
