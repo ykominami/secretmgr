@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "pathname"
-require "debug"
 
 module Secretmgr
   # 秘匿情報マネージャ
@@ -30,6 +29,10 @@ module Secretmgr
         Loggerxs.init("log_", "log.txt", ".", true, log_level) if @init_count.zero?
         @init_count += 1
       end
+
+	  def reset_init_count
+	  	  @init_count = 0
+	  end
 
       attr_reader :setting_file, :format_file, :ssh_dir, :pem_dir, :no_pass_dir, :no_pass_rsa_dir, :json_file_dir,
                   :setting_key, :setting_iv, :format_json, :format_yaml, :secret_dir
