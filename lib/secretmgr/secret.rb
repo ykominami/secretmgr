@@ -25,6 +25,7 @@ module Secretmgr
       @mode = OpenSSL::PKey::RSA::PKCS1_OAEP_PADDING
       @setting = setting
       raise unless secret_dir_pn
+
       @secret_dir_pn = secret_dir_pn
       @secret_dir_pn = Pathname.new(@secret_dir_pn) unless @secret_dir_pn.instance_of?(Pathname)
 

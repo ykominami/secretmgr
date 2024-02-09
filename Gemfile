@@ -8,7 +8,8 @@ gemspec
 gem "base64"
 gem "multi_json"
 gem "ykutils"
-gem "ykxutils", path: "../ykxutils"
+# gem "ykxutils", path: "../ykxutils"
+gem "ykxutils"
 
 group :test, :development, optional: true do
   gem 'rspec', '~> 3.0'

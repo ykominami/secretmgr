@@ -24,11 +24,9 @@ RSpec.describe Secretmgr::Cli do
                   -e #{tdata.encrypted_secret_file}]
         tdata.encrypted_setting_file_pn.rmtree
         tdata.encrypted_secret_file_pn.rmtree
-        #
         inst = described_class.new
         inst.arg_parse(args)
         inst.execute
-        #
         expect(tdata.encrypted_secret_file_pn.exist?).to be(true)
         expect(tdata.encrypted_setting_file_pn.exist?).to be(true)
       end

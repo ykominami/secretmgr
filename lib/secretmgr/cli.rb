@@ -173,7 +173,7 @@ module Secretmgr
         secretmgr.set_setting_for_encrypted(@encrypted_setting_file_pn, @encrypted_secret_file_pn)
         secretmgr.set_setting_for_query(@target, @subtarget)
         secretmgr.load
-        ret = secretmgr.convert()
+        ret = secretmgr.convert
       end
       ret
     end

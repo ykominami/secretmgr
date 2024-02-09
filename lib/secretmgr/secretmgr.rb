@@ -35,7 +35,7 @@ module Secretmgr
       end
 
       def setting_key
-        SETTING_KEY 
+        SETTING_KEY
       end
 
       def setting_iv
@@ -43,7 +43,7 @@ module Secretmgr
       end
 
       def str_yml
-         YML
+        YML
       end
 
       attr_reader :setting_file, :format_file, :ssh_dir, :pem_dir, :no_pass_dir, :no_pass_rsa_dir, :json_file_dir,
@@ -59,9 +59,7 @@ module Secretmgr
       @setting = seting
       home_pn = Pathname.new(Dir.home)
       @secret_dir_pn = secret_dir_pn
-      if @secret_dir_pn.nil? || !@secret_dir_pn.instance_of?(Pathname)
-        @secret_dir_pn = Pathname.new(secret_dir_pn)
-      end 
+      @secret_dir_pn = Pathname.new(secret_dir_pn) if @secret_dir_pn.nil? || !@secret_dir_pn.instance_of?(Pathname)
       secret_key_dir_pn = Pathname.new(secret_key_dir_pn) unless secret_key_dir_pn.instance_of?(Pathname)
       secret_key_dir_pn.mkdir unless secret_key_dir_pn.exist?
       default_public_keyfile_pn = secret_key_dir_pn + "id_rsa.pub"
@@ -239,7 +237,7 @@ module Secretmgr
       decrypted_data.force_encoding("UTF-8")
     end
 
-    def convert()
+    def convert
       case @file_format
       when FORMAT_JSON
         @content
