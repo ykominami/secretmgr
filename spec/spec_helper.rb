@@ -59,10 +59,7 @@ def test_data_setup(test_data_dir_pn,
                     private_key_filename: nil,
                     encrypted_secret_file_pn: nil,
                     encrypted_setting_file_pn: nil)
-  # Create an instance of the Struct class
-  # test_data_dir_pn = make_test_data_dir_pn()
   ssh_dir_pn = Pathname.new(test_data_dir_pn) + "secret_key"
-  # p "ssh_dir_pn=#{ssh_dir_pn}"
   secret_dir_pn = test_data_dir_pn + (secret_dir || "secret")
   secret_key_dir_pn = test_data_dir_pn + (secret_key_dir || "secret_key")
   plain_dir_pn = test_data_dir_pn + (plain_dir || "plain")
@@ -72,13 +69,11 @@ def test_data_setup(test_data_dir_pn,
   unless public_key_file_pn
     public_key_filename ||= "id_rsa_no.pub"
     public_key_file_pn = ssh_dir_pn + public_key_filename
-    # p "X public_key_file_pn=#{public_key_file_pn}"
   end
 
   unless private_key_file_pn
     private_key_filename ||= "id_rsa_no"
     private_key_file_pn = ssh_dir_pn + private_key_filename
-    # p "X private_key_file_pn=#{private_key_file_pn}"
   end
   plain_secret_file_pn ||= plain_dir_pn + "secret.txt"
   plain_setting_file_pn ||= plain_dir_pn + "setting.txt"
@@ -119,7 +114,8 @@ def encrypt_decrypt(plaintext, key, ivalue)
   # str に与えた文字列を暗号化します。
   encrypted_text = encx.update(plaintext) + encx.final
   base64_text = Base64.encode64(encrypted_text)
-  File.read("a.txt")
+  File.write("a.txt", base64_text)
+  base64_text2 = File.read("a.txt")
   plaintext = Base64.decode64(base64_text2)
 
   decx = OpenSSL::Cipher.new(CIPHER_NAME)
