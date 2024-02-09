@@ -30,20 +30,24 @@ module Secretmgr
         @init_count += 1
       end
 
-	  def reset_init_count
-	  	  @init_count = 0
-	  end
+      def reset_init_count
+        @init_count = 0
+      end
 
-      attr_reader :setting_file, :format_file, :ssh_dir, :pem_dir, :no_pass_dir, :no_pass_rsa_dir, :json_file_dir,
-                  :setting_key, :setting_iv, :format_json, :format_yaml, :secret_dir
+      def setting_key
+        SETTING_KEY 
+      end
+
+      def setting_iv
+        SETTING_IV
+      end
 
       def str_yml
-        @yml
+         YML
       end
 
-      def str_dot_yml
-        @dot_yml
-      end
+      attr_reader :setting_file, :format_file, :ssh_dir, :pem_dir, :no_pass_dir, :no_pass_rsa_dir, :json_file_dir,
+                  :format_json, :format_yaml, :secret_dir
     end
 
     def initialize(seting, secret_dir_pn, secret_key_dir_pn, ope,
@@ -54,7 +58,10 @@ module Secretmgr
 
       @setting = seting
       home_pn = Pathname.new(Dir.home)
-      secret_dir_pn = Pathname.new(secret_dir_pn) unless secret_dir_pn.instance_of?(Pathname)
+      @secret_dir_pn = secret_dir_pn
+      if @secret_dir_pn.nil? || !@secret_dir_pn.instance_of?(Pathname)
+        @secret_dir_pn = Pathname.new(secret_dir_pn)
+      end 
       secret_key_dir_pn = Pathname.new(secret_key_dir_pn) unless secret_key_dir_pn.instance_of?(Pathname)
       secret_key_dir_pn.mkdir unless secret_key_dir_pn.exist?
       default_public_keyfile_pn = secret_key_dir_pn + "id_rsa.pub"
@@ -62,7 +69,7 @@ module Secretmgr
       public_keyfile_pn = Pathname.new(public_keyfile_pn) if public_keyfile_pn
       private_keyfile_pn = Pathname.new(private_keyfile_pn) if private_keyfile_pn
 
-      @secret = Secret.new(@setting, home_pn, secret_dir_pn, ope,
+      @secret = Secret.new(@setting, home_pn, @secret_dir_pn, ope,
                            default_public_keyfile_pn,
                            default_private_keyfile_pn,
                            public_keyfile_pn: public_keyfile_pn,
@@ -71,8 +78,6 @@ module Secretmgr
 
     def valid?
       @secret.valid
-      # Loggerxs.debug "1 ret=#{ret}"
-      # p  "2 ret=#{ret}"
     end
 
     def output_public_key(public_keyfile_pn)
@@ -107,54 +112,34 @@ module Secretmgr
     end
 
     def setup
-      # p "###### setup_setting"
       setup_setting
-      # p "###### setup_secret"
       setup_secret
-      # p "###### setup_secret_for_json_file"
       setup_secret_for_json_file
     end
 
     def setup_setting
-      puts "setup_setting @plain_setting_file_pn=#{@plain_setting_file_pn}"
+      Loggerxs.debug "setup_setting @plain_setting_file_pn=#{@plain_setting_file_pn}"
       content = File.read(@plain_setting_file_pn)
-      puts "setup_setting content=#{content}"
-      # @setting = Ykxutils.yaml_load_compati(content)
+      Loggerxs.debug "setup_setting content=#{content}"
       @setting = YAML.safe_load(content)
-      puts "setup_setting @setting=#{@setting}"
-      # content = YAML.dump(@setting)
-      encrypted_text = encrypt_with_public_key(content)
-      dest_setting_file_pn = make_pair_file_pn(@secret_dir_pn, @plain_setting_file_pn, Secretmgr.str_yml)
-
-      @setting = YAML.safe_load(content)
-      # p "setup_setting @setting=#{@setting}"
-
-      Loggerxs.debug @setting
-      # pp "@setting=#{@setting}"
-      # puts "setup_setting    @setting=#{@setting}"
+      Loggerxs.debug "setup_setting @setting=#{@setting}"
       encrypted_text = @secret.encrypt_with_public_key(content)
-      # puts "setup_setting encrypted_text.size=#{encrypted_text.size}"
-      # puts "setup_setting encrypted_text=#{encrypted_text}"
-      #
       @secret.decrypt_with_private_key(encrypted_text)
-      # puts "setup_setting decrypted_text=#{decrypted_text}"
-      # puts "setup_setting decrypted_text.size=#{decrypted_text.size}"
-
-      dest_setting_file_pn = @secret.make_pair_file_pn(@plain_setting_file_pn, YML)
-
-      Loggerxs.debug "setup_setting dest_setting_file_pn=#{dest_setting_file_pn}"
+      dest_setting_file_pn = @secret.make_pair_file_pn(@secret_dir_pn, @plain_setting_file_pn, self.class.str_yml)
+      dest_setting_file_pn.parent.mkpath
+      Loggerxs.debug "================ A == setup_setting dest_setting_file_pn=#{dest_setting_file_pn}"
       File.write(dest_setting_file_pn, encrypted_text)
-      # p "dest_setting_file_pn=#{dest_setting_file_pn}"
     end
 
     def setup_secret
       plaintext = File.read(@plain_secret_file_pn)
-      puts "setup_secret @setting=#{@setting}"
+      Loggerxs.debug("setup_secret @setting=#{@setting}")
       encrypted_text = encrypt_with_common_key(plaintext,
                                                @setting[Secretmgr.setting_key],
                                                @setting[Secretmgr.setting_iv])
-      dest_secret_file_pn = make_pair_file_pn(@secret_dir_pn, @plain_secret_file_pn, Secretmgr.str_yml)
-      dest_secret_file_pn.realpath
+      dest_secret_file_pn = @secret.make_pair_file_pn(@secret_dir_pn, @plain_secret_file_pn, self.class.str_yml)
+      # dest_secret_file_pn.realpath
+      Loggerxs.debug("================ B === dest_secret_file_pn=#{dest_secret_file_pn}")
       File.write(dest_secret_file_pn, encrypted_text)
     end
 
@@ -182,7 +167,6 @@ module Secretmgr
     def set_setting_for_query(*dirs)
       @valid_dirs = dirs.flatten.compact
       @target, @sub_target, _tmp = @valid_dirs
-      # p "@valid_dirs=#{@valid_dirs}"
       @file_format = @secret.file_format(@target, @sub_target)
       Loggerxs.debug "@secret_dir_pn=#{@secret_dir_pn}"
       Loggerxs.debug "dirs=#{dirs}"
@@ -213,8 +197,8 @@ module Secretmgr
                    when @format_json
                      @decrpyted_content
                    when @format_yaml
-                     @secret = YAML.safe_load(@decrpyted_content)
-                     @sub_target ? @secret[@target][@sub_target] : @secret[@target]
+                     decrypted = YAML.safe_load(@decrpyted_content)
+                     @sub_target ? decrypted[@target][@sub_target] : decrypted[@target]
                    else
                      ""
                    end
@@ -230,22 +214,6 @@ module Secretmgr
     def load
       load_setting
       load_and_decrypt
-    end
-
-    def encrypt_with_public_key(data)
-      Base64.encode64(
-        @public_key.public_encrypt(
-          data,
-          OpenSSL::PKey::RSA::PKCS1_OAEP_PADDING
-        )
-      ).delete("\n")
-    end
-
-    def decrypt_with_private_key(base64_text)
-      @private_key.private_decrypt(
-        Base64.decode64(base64_text),
-        OpenSSL::PKey::RSA::PKCS1_OAEP_PADDING
-      )
     end
 
     # 引数 str を暗号化した結果を返す
@@ -271,7 +239,7 @@ module Secretmgr
       decrypted_data.force_encoding("UTF-8")
     end
 
-    def make(_template_dir, _target, _sub_target)
+    def convert()
       case @file_format
       when FORMAT_JSON
         @content

@@ -1,7 +1,7 @@
 RSpec.describe Secretmgr::Cli do
   Secretmgr::Secretmgr.reset_init_count
-  log_level = :info
-  # log_level = :debug
+  # log_level = :info
+  log_level = :debug
   Secretmgr::Secretmgr.log_init(log_level)
 
   let(:test_data) do
@@ -22,13 +22,15 @@ RSpec.describe Secretmgr::Cli do
                   -p #{tdata.plain_secret_file}
                   -F #{tdata.encrypted_setting_file}
                   -e #{tdata.encrypted_secret_file}]
-        #                   -u #{tdata.public_keyfile}
-        #                   -r #{tdata.private_keyfile}
+        tdata.encrypted_setting_file_pn.rmtree
+        tdata.encrypted_secret_file_pn.rmtree
+        #
         inst = described_class.new
         inst.arg_parse(args)
         inst.execute
-        expect(tdata.encrypted_setting_file_pn.exist?).to be(true)
+        #
         expect(tdata.encrypted_secret_file_pn.exist?).to be(true)
+        expect(tdata.encrypted_setting_file_pn.exist?).to be(true)
       end
     end
 
@@ -50,6 +52,7 @@ RSpec.describe Secretmgr::Cli do
                   -b #{subtarget}]
         inst = described_class.new
         inst.arg_parse(args)
+
         ret = inst.execute
         expect(ret.size).not_to eq(0)
       end

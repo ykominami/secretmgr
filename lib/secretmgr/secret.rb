@@ -21,14 +21,12 @@ module Secretmgr
                    default_private_keyfile_pn,
                    public_keyfile_pn: nil,
                    private_keyfile_pn: nil)
-      # p "Secret.initialize public_keyfile_pn=#{public_keyfile_pn}"
-      # p "Secret.initialize private_keyfile_pn~#{private_keyfile_pn}"
+      Loggerxs.debug "Secret.initialize secret_dir_pn=#{secret_dir_pn}"
       @mode = OpenSSL::PKey::RSA::PKCS1_OAEP_PADDING
       @setting = setting
-      # p "Secret.new secret_dir_pn=#{secret_dir_pn}"
+      raise unless secret_dir_pn
       @secret_dir_pn = secret_dir_pn
       @secret_dir_pn = Pathname.new(@secret_dir_pn) unless @secret_dir_pn.instance_of?(Pathname)
-      # p "@Secret.new secret_dir_pn=#{@secret_dir_pn}"
 
       @home_pn = home_pn
       @format_config = Config.new(@secret_dir_pn, FORMAT_FILE)
@@ -107,13 +105,9 @@ module Secretmgr
       @format_config.get_file_path(@secret_dir_pn, dirs)
     end
 
-    def make_pair_file_pn(file_pn, ext)
-      basename = file_pn.basename
-      extname = basename.extname
-      return nil if extname == ext
-
+    def make_pair_file_pn(dest_dir_pn, file_pn, ext)
       basename = file_pn.basename(".*")
-      @secret_dir_pn + %(#{basename}.#{ext})
+      dest_dir_pn + %(#{basename}.#{ext})
     end
 
     def encrypted_setting_file_pn
@@ -135,21 +129,11 @@ module Secretmgr
       end
       return unless key
 
-      # p "data.size=#{data.size}"
       ecrypted_text = key.public_encrypt(
         data,
         @mode
       )
       Base64.encode64(ecrypted_text)
-      #         # p "base64_test.size=#{base64_text.size}"
-      #         #
-      #         decrypted_text = @private_key_2.private_decrypt(
-      #           ecrypted_text,
-      #           @mode
-      #         )
-      #
-      #         # p "decrypted_text.size=#{decrypted_text.size}"
-      #         # p "decrypted_text=#{decrypted_text}"
     end
 
     def encrypt_and_copy(src_pn, relative_path, key, ivx)
@@ -176,12 +160,6 @@ module Secretmgr
       return unless key
 
       plain_text = Base64.decode64(base64_text)
-      #         p "decrypt_with_private_key base64_text.size=#{base64_text.size}"
-      #         p "decrypt_with_private_key base64_text=#{base64_text}"
-      #         p "decrypt_with_private_key @private_key=#{@private_key}"
-      #         p "decrypt_with_private_key @rsa_key=#{@rsa_key}"
-      #         p "decrypt_with_private_key key=#{key}"
-      #         p "decrypt_with_private_key plain_text.size=#{plain_text.size}"
       key.private_decrypt(
         plain_text,
         @mode
