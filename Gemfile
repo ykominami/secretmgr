@@ -6,5 +6,20 @@ source "https://rubygems.org"
 gemspec
 
 gem "multi_json"
-gem "ykutils"
-gem "ykxutils", path: "../ykxutils"
+
+# gem "loggerx", path: "../loggerx"
+gem "loggerx", "~> 0.2.0"
+
+group :development, :test do
+  gem "rake", "~> 13.0"
+  gem "rspec", "~> 3.13"
+  gem "rubocop", "~> 1.21"
+  gem "rubocop-rake", require: false
+  gem "rubocop-rspec", require: false
+
+  # gem "multi_json"
+
+  gem "debug"
+
+  gem "rufo"
+end
