@@ -5,21 +5,22 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in secretmgr.gemspec
 gemspec
 
+gem "base64"
 gem "multi_json"
+gem "ykutils"
+# gem "ykxutils", path: "../ykxutils"
+gem "ykxutils"
 
-# gem "loggerx", path: "../loggerx"
-gem "loggerx", "~> 0.2.0"
+group :test, :development, optional: true do
+  gem 'rspec', '~> 3.0'
+  gem 'rubocop'
+  gem 'rubocop-performance'
+  gem 'rubocop-rake', require: false
+  gem 'rubocop-rspec', require: false
+end
 
-group :development, :test do
-  gem "rake", "~> 13.0"
-  gem "rspec", "~> 3.13"
-  gem "rubocop", "~> 1.21"
-  gem "rubocop-rake", require: false
-  gem "rubocop-rspec", require: false
-
-  # gem "multi_json"
-
-  gem "debug"
-
-  gem "rufo"
+group :development do
+  gem 'debug', platforms: %i[mri mswin mswin64 mingw x64_mingw]
+  gem 'rufo'
+  gem 'yard'
 end

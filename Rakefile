@@ -2,8 +2,6 @@
 
 require "bundler/gem_tasks"
 
-task default: :spec
-
 ###
 require "secretmgr"
 require "pathname"
@@ -11,7 +9,7 @@ require "pathname"
 begin
   require "rspec/core/rake_task"
 rescue LoadError => e
-  puts e.message
+  Loggerxs e.message
 end
 
 begin

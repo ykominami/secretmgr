@@ -60,9 +60,6 @@ module Secretmgr
       @target = @params[:target]
       @subtarget = @params[:subtarget]
 
-      # p "arg_parse @public_keyfile_pn=#{@public_keyfile_pn}"
-      # p "arg_parse @private_keyfile_pn=#{@private_keyfile_pn}"
-
       fail_count = 0
       fail_count += file_option_error?(@global_setting_file_pn, "-s")
       fail_count += directory_option_error?(@secret_dir_pn, "-d")
@@ -74,8 +71,8 @@ module Secretmgr
       if @cmd == "setup"
         fail_count += file_option_error?(@plain_setting_file_pn, "-f")
         fail_count += file_option_error?(@plain_secret_file_pn, "-p")
-        fail_count += file_specified_option_error?(@encrypted_setting_file_pn, "-F")
-        fail_count += file_specified_option_error?(@encrypted_secret_fifile_pn, "-R")
+        fail_count += path_specified_option_error?(@encrypted_setting_file_pn, "-F")
+        fail_count += path_specified_option_error?(@encrypted_secret_fifile_pn, "-e")
       else
         # debugger
         @target = @params[:target]
@@ -124,6 +121,21 @@ module Secretmgr
       elsif !pathn.directory?
         fail_count = 1
       end
+      Loggerxs.debug "pathn=#{pathn}"
+      Loggerxs.debug "fail_count=#{fail_count}"
+      exit 10 if fail_count > 0
+      fail_count
+    end
+
+    def path_option_error_b?(pathn, option_name, kind = FILE_OPTION)
+      fail_count = 0
+      if pathn.nil?
+        fail_count = 1
+        if kind == FILE_OPTION
+          fail_count = 1 unless pathn.file?
+          Loggerxs.error "No file which specified by #{option_name}"
+        end
+      end
       fail_count
     end
 
@@ -148,13 +160,12 @@ module Secretmgr
         return EXIT_CODE_FAILURE unless secretmgr.valid?
 
         Loggerxs.debug "setup 1"
-        # p "@plain_setting_file_pn=#{@plain_setting_file_pn}"
         secretmgr.set_setting_for_plain(@plain_setting_file_pn, @plain_secret_file_pn)
         Loggerxs.debug "setup 2"
-        ret = secretmgr.setup
+        secretmgr.setup
         Loggerxs.debug "setup ret=#{ret}"
+        ret = ""
       else
-        # p "cli execute data @public_keyfile_pn=#{@public_keyfile_pn} @private_keyfile_pn=#{@private_keyfile_pn}"
         secretmgr = Secretmgr.new(@global_setting, @secret_dir_pn, @secret_key_dir_pn, "data",
                                   public_keyfile_pn: @public_keyfile_pn,
                                   private_keyfile_pn: @private_keyfile_pn)
@@ -162,8 +173,7 @@ module Secretmgr
         secretmgr.set_setting_for_encrypted(@encrypted_setting_file_pn, @encrypted_secret_file_pn)
         secretmgr.set_setting_for_query(@target, @subtarget)
         secretmgr.load
-        ret = secretmgr.make(@target, @subtarget)
-        # p ret
+        ret = secretmgr.convert
       end
       ret
     end
