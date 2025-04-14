@@ -25,3 +25,8 @@ Style/Documentation:
 Naming/AccessorMethodName:
   Enabled: false
 
+# Style/FrozenStringLiteralComment:
+#   Enable: false
+
+# Style/StringConcatenation:
+#   Enable: false

@@ -29,3 +29,6 @@ log*.txt
 *.gem
 a.rb
 
+spec/test_data/.ssh
+spec/test_data/secret_key
+
