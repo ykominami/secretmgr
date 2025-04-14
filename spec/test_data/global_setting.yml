@@ -1,0 +1,3 @@
+---
+default_public_keyfile: C:\Users\ykomi\cur\ruby\secretmgr\bin\..\spec\test_data/spec/test_data/secret_key/id_rsa.pub
+default_private_keyfile: C:\Users\ykomi\cur\ruby\secretmgr\bin\..\spec\test_data/spec/test_data/secret_key/id_rsa
